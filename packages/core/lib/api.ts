@@ -22,7 +22,7 @@ export class GitHub {
         })
     }
 
-    async thread(url: string) {
+    async fetch(url: string) {
         return await gh_client({
             path: url.replace('https://api.github.com', ''),
             token: this.token
@@ -49,12 +49,22 @@ export class GitHub {
         })
     }
 
-    async approvePR(owner: string, repo: string, pr_number: number, commit_id: string) {
+    async close(url: string) {
         return await gh_client({
-            path: `/repos/${owner}/${repo}/pulls/${pr_number}/reviews`,
+            path: url.replace('https://api.github.com', ''),
             token: this.token
         }, {
-            commit_id,
+            state: 'closed'
+        }, {
+            method: IMethod['PATCH']
+        })
+    }
+
+    async approvePR(url: string) {
+        return await gh_client({
+            path: url.replace('https://api.github.com', '') + "/reviews",
+            token: this.token
+        }, {
             event: 'APPROVE',
             body: 'LGTM'
         }, {
@@ -64,10 +74,11 @@ export class GitHub {
 
     async mergePR(url: string) {
         return await gh_client({
-            path: url.replace('https://api.github.com', ''),
+            path: url.replace('https://api.github.com', '') + "/merge",
             token: this.token
         }, {
-
+            commit_title: 'Merged by @b68web',
+            commit_message: 'Merged by @b68web'
         }, {
             method: IMethod['PUT']
         })
