@@ -6,10 +6,13 @@
     "packages/*",
     "apps/*"
   ],
-  "devDependencies": {
-    "bun-types": "latest"
+  "scripts": {
+    "build": "bun run build:cli && bun run build:worker && bun run build:core",
+    "build:cli": "cd apps/cli && bun run build",
+    "build:worker": "cd apps/worker && bun run build",
+    "build:core": "cd packages/core && bun run build"
   },
-  "peerDependencies": {
+  "dependencies": {
     "typescript": "^5.0.0"
   }
 }

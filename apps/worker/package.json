@@ -1,7 +1,14 @@
 {
-  "name": "api",
+  "name": "worker",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "bun run index.ts"
+  },
+  "dependencies": {
+    "core": "workspace:*"
+  },
   "devDependencies": {
     "bun-types": "latest"
   },

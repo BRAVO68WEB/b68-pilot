@@ -1,4 +1,4 @@
-# b68-poilet
+# b68-pilot
 
 I help [@bravo68web](https://github.com/bravo68web) to manage his Github Activities.
 
@@ -7,11 +7,11 @@ I help [@bravo68web](https://github.com/bravo68web) to manage his Github Activit
 Project is organized in workspaces.
 
 ### packages
-- [ ] [core](./packages/core/README.md) - `@poilet/core`
-- [ ] [api](./packages/api/README.md) - `@poilet/api`
+- [ ] [core](./packages/core/README.md) - `@pilot/core`
+- [ ] [api](./packages/api/README.md) - `@pilot/api`
 
 ### apps
-- [ ] [cli](./apps/cli/README.md) - `@poilet/cli`
+- [ ] [cli](./apps/cli/README.md) - `@pilot/cli`
 
 ## License
 
