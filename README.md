@@ -7,9 +7,11 @@
 Project is organized in workspaces.
 
 ### packages
+
 - [core](./packages/core/README.md) - `@pilot/core`
 
 ### apps
+
 - [cli](./apps/cli/README.md) - `@pilot/cli`
 - [worker](./packages/worker/README.md) - `@pilot/worker`
 
