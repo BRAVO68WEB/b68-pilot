@@ -5,11 +5,5 @@
   "workspaces": [
     "packages/*",
     "apps/*"
-  ],
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  }
+  ]
 }
