@@ -5,5 +5,14 @@
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "scripts": {
+    "build": "bun run build:cli && bun run build:worker && bun run build:core",
+    "build:cli": "cd apps/cli && bun run build",
+    "build:worker": "cd apps/worker && bun run build",
+    "build:core": "cd packages/core && bun run build"
+  },
+  "dependencies": {
+    "typescript": "^5.0.0"
+  }
 }
