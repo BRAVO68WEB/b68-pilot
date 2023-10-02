@@ -3,11 +3,11 @@ import { GitHub } from 'core'
 const gh = new GitHub(Bun.env.B68_GH_TOKEN as string)
 
 export const runner = async () => {
-    console.log("Loading worker...")
-
     const notifications: any[] = await gh.notifications()
 
     console.log("Notifications: ", notifications.length)
+
+    if(!notifications.length) return console.log("No notifications!")
 
     for (const notification of notifications) {
         console.log("Notification for: ", notification.reason)

@@ -3,13 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "packages/*"
   ],
   "scripts": {
     "build": "bun run build:cli && bun run build:worker && bun run build:core",
-    "build:cli": "cd apps/cli && bun run build",
-    "build:worker": "cd apps/worker && bun run build",
+    "build:cli": "cd packages/cli && bun run build",
+    "build:worker": "cd packages/worker && bun run build",
     "build:core": "cd packages/core && bun run build"
   },
   "dependencies": {
