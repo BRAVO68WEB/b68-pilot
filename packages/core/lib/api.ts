@@ -66,7 +66,7 @@ export class GitHub {
             token: this.token
         }, {
             event: 'APPROVE',
-            body: 'LGTM'
+            body: 'LGTM and @ba3a-g says hi!'
         }, {
             method: IMethod['POST']
         })
@@ -77,7 +77,7 @@ export class GitHub {
             path: url.replace('https://api.github.com', '') + "/merge",
             token: this.token
         }, {
-            commit_title: 'Merged by @b68web',
+            commit_title: 'Merged by @b68web, @ba3a-g says hi!',
             commit_message: 'Merged by @b68web'
         }, {
             method: IMethod['PUT']
