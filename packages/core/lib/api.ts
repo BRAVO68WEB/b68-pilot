@@ -83,4 +83,15 @@ export class GitHub {
             method: IMethod['PUT']
         })
     }
+
+    async getThreadCreatedBy(url: string) {
+        const threadMsg =  await gh_client({
+            path: url.replace('https://api.github.com', ''),
+            token: this.token
+        }, {}, {
+            method: IMethod['GET']
+        })
+
+        
+    }
 }

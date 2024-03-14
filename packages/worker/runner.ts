@@ -17,12 +17,15 @@ export const runner = async () => {
         }
 
         else if (notification.reason === 'mention') {
+            console.log(JSON.stringify(notification))
             console.log("Mentioned at " + notification.repository.full_name)
 
             const getComment = await gh.fetch(notification.subject.latest_comment_url.replace('https://api.github.com', ''))
 
             const rawComment = getComment.body.split('@b68web ')
             const command = rawComment[1]
+
+            console.log("Command: ", command)
 
             switch (command) {
                 case 'close issue': {

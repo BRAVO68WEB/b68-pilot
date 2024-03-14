@@ -12,6 +12,7 @@
     "build:core": "cd packages/core && bun run build"
   },
   "dependencies": {
+    "hono": "^3.11.12",
     "typescript": "^5.0.0"
   }
 }

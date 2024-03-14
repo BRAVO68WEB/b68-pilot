@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "bun run index.ts"
+    "start": "bun run index.ts",
+    "dev": "bun run test.ts"
   },
   "dependencies": {
     "core": "workspace:packages/core",
