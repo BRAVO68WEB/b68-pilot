@@ -1,66 +1,48 @@
-import { GitHub } from 'core'
+import {
+    executeMentionCommand,
+    GitHub,
+    GitHubNotification,
+} from 'core'
 
-const gh = new GitHub(Bun.env.B68_GH_TOKEN as string)
+export function getToken(): string {
+    const token = Bun.env.B68_GH_TOKEN
+    if (!token || !String(token).trim()) {
+        throw new Error('B68_GH_TOKEN is required. Set it in the environment.')
+    }
+    return String(token).trim()
+}
 
+/** Polling runner: fetch notifications and process @b68web mention commands. */
 export const runner = async () => {
-    const notifications: any[] = await gh.notifications()
+    const gh = new GitHub(getToken())
+    const notifications: GitHubNotification[] = await gh.notifications()
 
-    console.log("Notifications: ", notifications.length)
-
-    if(!notifications.length) return console.log("No notifications!")
+    console.log('Notifications:', notifications.length)
+    if (!notifications.length) {
+        console.log('No notifications!')
+        return
+    }
 
     for (const notification of notifications) {
-        console.log("Notification for: ", notification.reason)
+        console.log('Notification for:', notification.reason)
 
         if (notification.reason === 'assign') {
-            console.log("I was assigned on " + notification.repository.full_name)
-        }
+            console.log('I was assigned on', notification.repository.full_name)
+        } else if (notification.reason === 'mention') {
+            console.log('Mentioned at', notification.repository.full_name)
 
-        else if (notification.reason === 'mention') {
-            console.log("Mentioned at " + notification.repository.full_name)
+            const commentUrl = notification.subject.latest_comment_url
+            if (!commentUrl) continue
 
-            const getComment = await gh.fetch(notification.subject.latest_comment_url.replace('https://api.github.com', ''))
-
-            const rawComment = getComment.body.split('@b68web ')
-            const command = rawComment[1]
-
-            switch (command) {
-                case 'close issue': {
-                    console.log("Closing issue " + notification.subject.url)
-
-                    await gh.close(notification.subject.url)
-
-                    break
-                }
-
-                case 'close pr': {
-                    console.log("Closing PR " + notification.subject.url)
-
-                    await gh.close(notification.subject.url)
-                    
-                    break
-                }
-
-                case 'merge pr': {
-                    console.log("Merging PR " + notification.subject.url)
-
-                    await gh.mergePR(notification.subject.url)
-
-                    break
-                }
-
-                case 'approve pr': {
-                    console.log("Approving PR " + notification.subject.url)
-
-                    await gh.approvePR(notification.subject.url)
-
-                    break
-                }
-            }
+            const path = commentUrl.replace('https://api.github.com', '')
+            const comment = await gh.fetch<{ body?: string }>(path)
+            const subjectUrl = notification.subject.url
+            const command = await executeMentionCommand(gh, comment?.body, subjectUrl)
+            if (command) console.log('Executed command:', command)
         }
 
         await gh.markAsRead(notification.url)
     }
 
-    console.log("Worker loaded!")
+    console.log('Worker run complete.')
 }

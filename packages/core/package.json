@@ -1,9 +1,10 @@
 {
   "name": "core",
+  "version": "0.0.0",
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "bunx tsc",
     "dev": "bun run index.ts"
   },
   "devDependencies": {

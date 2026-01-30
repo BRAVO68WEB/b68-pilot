@@ -1,86 +1,71 @@
-import { IMethod } from '..';
-import { gh_client } from './client';
+import { IMethod } from '..'
+import { gh_client } from './client'
+
+const API_BASE = 'https://api.github.com'
+
+function pathFromUrl(url: string): string {
+    return url.replace(API_BASE, '')
+}
 
 export class GitHub {
-    constructor(private token: string) {}
+    constructor(private readonly token: string) {}
 
-    async notifications() {
-        return await gh_client({
-            path: '/notifications',
-            token: this.token
-        }, {}, {
-            method: IMethod['GET']
-        })
+    private request<T>(
+        method: IMethod,
+        path: string,
+        body: Record<string, unknown> = {}
+    ): Promise<T> {
+        return gh_client<T>(
+            { path, token: this.token, useBearer: true },
+            body,
+            { method }
+        )
     }
 
-    async markAsRead(url: string) {
-        return await gh_client({
-            path: url.replace('https://api.github.com', ''),
-            token: this.token
-        }, {}, {
-            method: IMethod['PATCH']
-        })
+    async notifications(): Promise<GitHubNotification[]> {
+        return this.request<GitHubNotification[]>(IMethod.GET, '/notifications')
     }
 
-    async fetch(url: string) {
-        return await gh_client({
-            path: url.replace('https://api.github.com', ''),
-            token: this.token
-        }, {}, {
-            method: IMethod['GET']
-        })
+    async markAsRead(url: string): Promise<unknown> {
+        return this.request(IMethod.PATCH, pathFromUrl(url))
     }
 
-    async listIssues(owner: string, repo: string) {
-        return await gh_client({
-            path: `/repos/${owner}/${repo}/issues`,
-            token: this.token
-        }, {}, {
-            method: IMethod['GET']
-        })
+    async fetch<T = unknown>(url: string): Promise<T> {
+        return this.request<T>(IMethod.GET, pathFromUrl(url))
     }
 
-    async listPRs(owner: string, repo: string) {
-        return await gh_client({
-            path: `/repos/${owner}/${repo}/pulls`,
-            token: this.token
-        }, {}, {
-            method: IMethod['GET']
-        })
+    async listIssues(owner: string, repo: string): Promise<unknown[]> {
+        return this.request<unknown[]>(IMethod.GET, `/repos/${owner}/${repo}/issues`)
     }
 
-    async close(url: string) {
-        return await gh_client({
-            path: url.replace('https://api.github.com', ''),
-            token: this.token
-        }, {
-            state: 'closed'
-        }, {
-            method: IMethod['PATCH']
-        })
+    async listPRs(owner: string, repo: string): Promise<unknown[]> {
+        return this.request<unknown[]>(IMethod.GET, `/repos/${owner}/${repo}/pulls`)
     }
 
-    async approvePR(url: string) {
-        return await gh_client({
-            path: url.replace('https://api.github.com', '') + "/reviews",
-            token: this.token
-        }, {
+    async close(url: string): Promise<unknown> {
+        return this.request(IMethod.PATCH, pathFromUrl(url), { state: 'closed' })
+    }
+
+    async approvePR(url: string): Promise<unknown> {
+        return this.request(IMethod.POST, pathFromUrl(url) + '/reviews', {
             event: 'APPROVE',
-            body: 'LGTM'
-        }, {
-            method: IMethod['POST']
+            body: 'LGTM',
         })
     }
 
-    async mergePR(url: string) {
-        return await gh_client({
-            path: url.replace('https://api.github.com', '') + "/merge",
-            token: this.token
-        }, {
+    async mergePR(url: string): Promise<unknown> {
+        return this.request(IMethod.PUT, pathFromUrl(url) + '/merge', {
             commit_title: 'Merged by @b68web',
-            commit_message: 'Merged by @b68web'
-        }, {
-            method: IMethod['PUT']
+            commit_message: 'Merged by @b68web',
         })
     }
+}
+
+/** Minimal type for GitHub notification items from /notifications */
+export interface GitHubNotification {
+    id: string
+    url: string
+    reason: string
+    subject: { url: string; latest_comment_url?: string }
+    repository: { full_name: string }
 }

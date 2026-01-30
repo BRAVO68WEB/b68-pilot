@@ -3,11 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "bun run index.ts"
+    "build": "bunx tsc",
+    "dev": "bun run index.ts",
+    "webhook": "bun run webhook.ts"
   },
   "dependencies": {
-    "core": "workspace:packages/core",
+    "core": "workspace:*",
     "croner": "^7.0.2"
   },
   "devDependencies": {

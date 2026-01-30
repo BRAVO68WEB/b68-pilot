@@ -1,29 +1,50 @@
 import { IClientInput, IInput, IMethod } from '../index.d'
 
-const gh_client = async (input: IInput, body: any, cinput: IClientInput) => {
-    const url = new Request('https://api.github.com' + input.path + (input.query ? '?' + input.query : ''))
+const API_BASE = 'https://api.github.com'
 
-    const requestObject = {
-        method: IMethod[cinput.method],
-        headers: {
-            'Accept': 'application/vnd.github.v3+json',
-            'Authorization': 'token ' + input.token,
-        },
+export class GitHubApiError extends Error {
+    constructor(
+        message: string,
+        public readonly status: number,
+        public readonly body: unknown
+    ) {
+        super(message)
+        this.name = 'GitHubApiError'
     }
-
-    if(IMethod[cinput.method] !== IMethod.GET) {
-        Object.assign(requestObject, {
-            body: JSON.stringify(body)
-        })
-    }
-
-    const response = await fetch(url, requestObject)
-
-    return await response.json()
 }
 
-export {
-    gh_client
-}
+export async function gh_client<T = unknown>(
+    input: IInput,
+    body: Record<string, unknown>,
+    cinput: IClientInput
+): Promise<T> {
+    const url = `${API_BASE}${input.path}${input.query ? `?${input.query}` : ''}`
+    const useBearer = input.useBearer !== false
+    const auth = useBearer ? `Bearer ${input.token}` : `token ${input.token}`
 
-// Path: packages/core/lib/client.ts
+    const headers: Record<string, string> = {
+        Accept: 'application/vnd.github.v3+json',
+        Authorization: auth,
+    }
+    const init: { method: string; headers: Record<string, string>; body?: string } = {
+        method: cinput.method,
+        headers,
+    }
+    if (cinput.method !== IMethod.GET && Object.keys(body).length > 0) {
+        init.body = JSON.stringify(body)
+    }
+
+    const response = await fetch(url, init)
+    const text = await response.text()
+    const data = text ? (JSON.parse(text) as T) : null
+
+    if (!response.ok) {
+        throw new GitHubApiError(
+            `GitHub API error: ${response.status} ${response.statusText}`,
+            response.status,
+            data
+        )
+    }
+
+    return data as T
+}
