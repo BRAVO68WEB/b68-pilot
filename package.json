@@ -9,7 +9,8 @@
     "build": "bun run build:core && bun run build:cli && bun run build:worker",
     "build:cli": "cd packages/cli && bun run build",
     "build:worker": "cd packages/worker && bun run build",
-    "build:core": "cd packages/core && bun run build"
+    "build:core": "cd packages/core && bun run build",
+    "test": "cd packages/core && bun test"
   },
   "dependencies": {
     "typescript": "^5.0.0"

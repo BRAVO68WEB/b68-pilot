@@ -1,0 +1,26 @@
+{
+  "name": "b68-pilot-dev",
+  "url": "https://example.com",
+  "hook_attributes": {
+    "url": "https://example.com/github/webhook"
+  },
+  "public": false,
+  "request_oauth_on_install": true,
+  "default_permissions": {
+    "metadata": "read",
+    "contents": "read",
+    "issues": "write",
+    "pull_requests": "write",
+    "checks": "write"
+  },
+  "default_events": [
+    "issues",
+    "issue_comment",
+    "pull_request",
+    "pull_request_review",
+    "pull_request_review_comment",
+    "check_run",
+    "check_suite"
+  ]
+}
+

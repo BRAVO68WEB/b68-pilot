@@ -1,32 +1,41 @@
 # worker
 
-Runs @b68web mention commands (close issue/pr, merge pr, approve pr) via **polling** (cron) or **webhooks**.
+Runs the GitHub App webhook server and background reconciliation jobs.
 
-## Modes
+## Webhook Server
 
-### 1. Polling (cron, default)
-
-Runs every 5 minutes and checks GitHub notifications.
-
-```bash
-bun run index.ts
-# or: bun run dev
-```
-
-Env: `B68_GH_TOKEN` (required).
-
-### 2. Webhooks (recommended)
-
-HTTP server that receives GitHub `issue_comment` events. Instant, no polling.
+HTTP server that receives GitHub App webhook events. It verifies signatures,
+mints installation access tokens, stores work items, and handles bot mention
+commands.
 
 ```bash
 bun run webhook
 ```
 
-Env: `B68_GH_TOKEN`, `B68_WEBHOOK_SECRET` (required for verification), `B68_WEBHOOK_PORT` (default 3131).
+Env:
 
-In the repo: **Settings → Webhooks → Add webhook**  
-- Payload URL: `https://your-host/webhook` (use ngrok for local dev)  
-- Content type: `application/json`  
-- Secret: same as `B68_WEBHOOK_SECRET`  
-- Events: **Issue comments**
+- `B68_GITHUB_APP_ID`
+- `B68_GITHUB_APP_PRIVATE_KEY`
+- `B68_GITHUB_WEBHOOK_SECRET`
+- `B68_GITHUB_CLIENT_ID`
+- `B68_GITHUB_APP_SLUG`
+- `B68_DB_PATH` optional, defaults to `.data/b68-pilot.sqlite`
+- `B68_WEBHOOK_PORT` optional, defaults to `3131`
+
+Configure the GitHub App webhook URL as:
+
+```text
+https://your-host/github/webhook
+```
+
+Supported commands:
+
+```text
+@<app-slug> close
+@<app-slug> approve
+@<app-slug> merge
+@<app-slug> summarize
+@<app-slug> status
+```
+
+`summarize` is currently acknowledged but not implemented.

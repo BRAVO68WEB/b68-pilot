@@ -5,7 +5,7 @@
   "scripts": {
     "build": "bunx tsc",
     "dev": "bun run index.ts",
-    "webhook": "bun run webhook.ts"
+    "webhook": "bun run server.ts"
   },
   "dependencies": {
     "core": "workspace:*",
