@@ -1,7 +1,5 @@
-import { createHmac, timingSafeEqual } from 'crypto'
 import type { GitHub } from './api'
 
-/** GitHub issue_comment webhook payload (action: created). */
 export interface IssueCommentWebhookPayload {
     action: 'created'
     comment: { body?: string | null }
@@ -11,7 +9,6 @@ export interface IssueCommentWebhookPayload {
 
 const MENTION_PREFIX = '@b68web '
 
-/** Parse first @b68web command from comment body. Returns trimmed command or null. */
 export function parseMentionCommand(body: string | null | undefined): string | null {
     if (body == null || typeof body !== 'string') return null
     const idx = body.indexOf(MENTION_PREFIX)
@@ -30,11 +27,6 @@ const COMMANDS = {
 
 type CommandKey = keyof typeof COMMANDS
 
-/**
- * Execute a mention command (close / merge PR / approve PR).
- * Use this from either the polling runner or a webhook handler.
- * Returns the action performed, or null if no valid command.
- */
 export async function executeMentionCommand(
     gh: GitHub,
     commentBody: string | null | undefined,
@@ -54,33 +46,36 @@ export async function executeMentionCommand(
     return command as CommandKey
 }
 
-export const sign = async (secret: string, payload: string): Promise<string> => {
-  const algorithm = "sha256";
+const SIG_PREFIX = 'sha256='
 
-  return `${algorithm}=${createHmac(algorithm, secret)
-    .update(payload)
-    .digest("hex")}`;
-}
-
-/**
- * Verify GitHub webhook signature (X-Hub-Signature-256).
- * Use timing-safe comparison. Returns true if valid.
- */
 export async function verifyWebhookSignature(
     secret: string,
     rawBody: string,
-    signature: string
+    signature: string | null | undefined
 ): Promise<boolean> {
-  const signatureBuffer = Buffer.from(signature);
+    if (!signature || !signature.startsWith(SIG_PREFIX)) return false
+    const expectedHex = signature.slice(SIG_PREFIX.length)
+    if (expectedHex.length !== 64) return false
 
-    const verificationBuffer = Buffer.from(await sign(secret, rawBody));
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    )
 
-    if (signatureBuffer.length !== verificationBuffer.length) {
-      return false;
+    const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody))
+    const actualHex = Array.from(new Uint8Array(sig))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+
+    if (actualHex.length !== expectedHex.length) return false
+
+    let result = 0
+    for (let i = 0; i < actualHex.length; i++) {
+        result |= actualHex.charCodeAt(i) ^ expectedHex.charCodeAt(i)
     }
-
-    // constant time comparison to prevent timing attacks
-    // https://stackoverflow.com/a/31096242/206879
-    // https://en.wikipedia.org/wiki/Timing_attack
-    return timingSafeEqual(signatureBuffer, verificationBuffer);
+    return result === 0
 }
