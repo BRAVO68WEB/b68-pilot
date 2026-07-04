@@ -1,4 +1,3 @@
-import crypto from 'crypto'
 import type { GitHub } from './api'
 
 /** GitHub issue_comment webhook payload (action: created). */
@@ -75,11 +74,11 @@ export function verifyWebhookSignature(
 
     return crypto.subtle
         .importKey('raw', key, algo, false, ['sign'])
-        .then((k) => {
-            return crypto.subtle.sign('HMAC', k, data as unknown as NodeJS.BufferSource)
+        .then((k: CryptoKey) => {
+            return crypto.subtle.sign('HMAC', k, data)
         })
-        .then((sig) => hexFromBytes(new Uint8Array(sig)))
-        .then((actualHex) => timingSafeEqual(actualHex, expectedHex))
+        .then((sig: ArrayBuffer) => hexFromBytes(new Uint8Array(sig)))
+        .then((actualHex: string) => timingSafeEqual(actualHex, expectedHex))
 }
 
 function hexFromBytes(bytes: Uint8Array): string {

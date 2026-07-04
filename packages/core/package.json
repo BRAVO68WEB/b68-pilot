@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "bunx tsc",
-    "dev": "bun run index.ts"
+    "dev": "bun run index.ts",
+    "test": "bun test"
   },
   "devDependencies": {
     "bun-types": "latest"

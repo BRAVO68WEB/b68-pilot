@@ -1,0 +1,34 @@
+services:
+  webhook:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    command: ["packages/worker/server.ts"]
+    ports:
+      - "${B68_WEBHOOK_PORT:-3131}:3131"
+    env_file: .env
+    environment:
+      - B68_DB_PATH=/app/.data/b68-pilot.sqlite
+    volumes:
+      - pilot-data:/app/.data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3131/github/webhook', {method:'POST'}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    command: ["packages/worker/index.ts"]
+    env_file: .env
+    environment:
+      - B68_DB_PATH=/app/.data/b68-pilot.sqlite
+    volumes:
+      - pilot-data:/app/.data
+    restart: unless-stopped
+
+volumes:
+  pilot-data:

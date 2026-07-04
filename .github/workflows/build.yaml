@@ -9,9 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup Bun Runtime
-        uses: antongolub/action-setup-bun@v1
-      - run: bun i
+        uses: oven-sh/setup-bun@v2
+      - run: bun install
       - run: bun run build
-      - run: du -sh

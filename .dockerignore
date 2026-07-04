@@ -1,0 +1,12 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+*.md
+.github
+.idea
+.vscode
+*.sqlite
+.data
+packages/cli

@@ -1,11 +1,16 @@
 # core
 
-GitHub API client and webhook utilities for b68-pilot.
+GitHub App auth, API clients, command parsing, webhook utilities, and work-item
+storage for b68-pilot.
 
-## Notifications: polling vs webhooks
+## Auth Modes
 
-- **Polling** (worker cron): calls `GET /notifications` every 5 minutes. Simple, no public URL, but delayed and uses more API calls.
-- **Webhooks** (recommended): GitHub sends `issue_comment` events to your server when someone comments. Instant, fewer API calls. Requires a public URL and a webhook secret. Use the worker’s webhook server: `bun run webhook` in the worker package.
+- App JWT: list installations and mint installation tokens.
+- Installation token: perform bot actions in installed repositories.
+- User token: CLI login and user-attributed commands.
+
+The `/notifications` API is not used by the GitHub App flow. Work items come
+from webhooks, GitHub search queries, and repository issue/PR APIs.
 
 ## Install
 
