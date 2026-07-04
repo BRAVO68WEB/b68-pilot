@@ -11,7 +11,7 @@ COPY tsconfig.json ./
 COPY packages/core/ packages/core/
 COPY packages/worker/ packages/worker/
 
-RUN bun run build
+RUN bun run build:core && bun run build:worker
 
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app
