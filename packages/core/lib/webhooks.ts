@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'crypto'
 import type { GitHub } from './api'
 
 /** GitHub issue_comment webhook payload (action: created). */
@@ -53,43 +54,33 @@ export async function executeMentionCommand(
     return command as CommandKey
 }
 
-const SIG_PREFIX = 'sha256='
+export const sign = async (secret: string, payload: string): Promise<string> => {
+  const algorithm = "sha256";
+
+  return `${algorithm}=${createHmac(algorithm, secret)
+    .update(payload)
+    .digest("hex")}`;
+}
 
 /**
  * Verify GitHub webhook signature (X-Hub-Signature-256).
  * Use timing-safe comparison. Returns true if valid.
  */
-export function verifyWebhookSignature(
+export async function verifyWebhookSignature(
     secret: string,
-    rawBody: string | Uint8Array,
-    signature: string | null | undefined
+    rawBody: string,
+    signature: string
 ): Promise<boolean> {
-    if (!signature || !signature.startsWith(SIG_PREFIX)) return Promise.resolve(false)
-    const expectedHex = signature.slice(SIG_PREFIX.length)
-    if (expectedHex.length !== 64) return Promise.resolve(false)
+  const signatureBuffer = Buffer.from(signature);
 
-    const key = new TextEncoder().encode(secret)
-    const data = typeof rawBody === 'string' ? new TextEncoder().encode(rawBody) : rawBody
-    const algo = { name: 'HMAC', hash: 'SHA-256' }
+    const verificationBuffer = Buffer.from(await sign(secret, rawBody));
 
-    return crypto.subtle
-        .importKey('raw', key, algo, false, ['sign'])
-        .then((k: CryptoKey) => {
-            return crypto.subtle.sign('HMAC', k, data)
-        })
-        .then((sig: ArrayBuffer) => hexFromBytes(new Uint8Array(sig)))
-        .then((actualHex: string) => timingSafeEqual(actualHex, expectedHex))
-}
+    if (signatureBuffer.length !== verificationBuffer.length) {
+      return false;
+    }
 
-function hexFromBytes(bytes: Uint8Array): string {
-    return Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-    if (a.length !== b.length) return false
-    let out = 0
-    for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i)
-    return out === 0
+    // constant time comparison to prevent timing attacks
+    // https://stackoverflow.com/a/31096242/206879
+    // https://en.wikipedia.org/wiki/Timing_attack
+    return timingSafeEqual(signatureBuffer, verificationBuffer);
 }

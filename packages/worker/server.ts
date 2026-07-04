@@ -24,10 +24,14 @@ const server = Bun.serve({
             return new Response('Method Not Allowed', { status: 405 })
         }
 
-        const event = req.headers.get('X-GitHub-Event') ?? 'unknown'
+        const event = req.headers.get('X-GitHub-Event')
         const deliveryId = req.headers.get('X-GitHub-Delivery') ?? crypto.randomUUID()
         const signature = req.headers.get('X-Hub-Signature-256')
         const rawBody = await req.text()
+
+        if (!event || !signature) {
+            return json({ ok: true, message: 'b68-pilot webhook endpoint' })
+        }
 
         if (event === 'ping') {
             log.info('Received ping event')

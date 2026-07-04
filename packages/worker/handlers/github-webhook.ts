@@ -28,6 +28,42 @@ interface BaseWebhookPayload {
     sender?: { login: string }
 }
 
+interface InstallationPayload extends BaseWebhookPayload {
+    action: string
+    installation: {
+        id: number
+        account?: {
+            login: string
+            type: string
+        }
+        repository_selection?: string
+    }
+    repositories?: Array<{
+        full_name: string
+        name: string
+    }>
+}
+
+interface InstallationRepositoriesPayload extends BaseWebhookPayload {
+    action: string
+    installation: {
+        id: number
+        account?: {
+            login: string
+            type: string
+        }
+        repository_selection?: string
+    }
+    repositories_added?: Array<{
+        full_name: string
+        name: string
+    }>
+    repositories_removed?: Array<{
+        full_name: string
+        name: string
+    }>
+}
+
 interface IssueCommentPayload extends BaseWebhookPayload {
     action: string
     comment: { body?: string | null; html_url?: string }
@@ -173,6 +209,10 @@ export class GitHubWebhookHandler {
         payload: BaseWebhookPayload
     ): Promise<{ ignored?: string; command?: string | null }> {
         switch (event) {
+            case 'installation':
+                return { command: await this.handleInstallation(payload as InstallationPayload) }
+            case 'installation_repositories':
+                return { command: await this.handleInstallationRepositories(payload as InstallationRepositoriesPayload) }
             case 'issue_comment':
                 return { command: await this.handleIssueComment(payload as IssueCommentPayload) }
             case 'issues':
@@ -188,6 +228,36 @@ export class GitHubWebhookHandler {
             default:
                 return { ignored: event }
         }
+    }
+
+    private async handleInstallation(payload: InstallationPayload): Promise<string | null> {
+        if (!payload.installation?.id) return null
+        if (!payload.installation.account) return null
+
+        if (payload.action === 'created' || payload.action === 'suspend' || payload.action === 'unsuspend') {
+            this.store.saveInstallation(
+                payload.installation.id,
+                payload.installation.account.login,
+                payload.installation.account.type,
+                payload.installation.repository_selection
+            )
+        }
+
+        return null
+    }
+
+    private async handleInstallationRepositories(payload: InstallationRepositoriesPayload): Promise<string | null> {
+        if (!payload.installation?.id) return null
+        if (!payload.installation.account) return null
+
+        this.store.saveInstallation(
+            payload.installation.id,
+            payload.installation.account.login,
+            payload.installation.account.type,
+            payload.installation.repository_selection
+        )
+
+        return null
     }
 
     private async handleIssueComment(payload: IssueCommentPayload): Promise<string | null> {
