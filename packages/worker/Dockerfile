@@ -5,7 +5,7 @@ COPY package.json bun.lockb ./
 COPY packages/core/package.json packages/core/
 COPY packages/worker/package.json packages/worker/
 
-RUN bun install --frozen-lockfile
+RUN bun install
 
 COPY tsconfig.json ./
 COPY packages/core/ packages/core/
