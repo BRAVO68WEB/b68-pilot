@@ -84,9 +84,13 @@ interface PullRequestPayload extends BaseWebhookPayload {
         url: string
         state: string
         merged?: boolean
+        merge_commit_sha?: string
+        additions?: number
+        deletions?: number
         user?: { login: string }
         assignees?: Array<{ login: string }>
         requested_reviewers?: Array<{ login: string }>
+        labels?: Array<{ name: string }>
         updated_at: string
         base?: { ref: string }
     }
@@ -279,6 +283,7 @@ export class GitHubWebhookHandler {
             issueApiUrl: payload.issue.url,
             isPullRequest,
             commentBody: payload.comment.body,
+            installationId: payload.installation.id,
         })
 
         if (result) {
@@ -335,7 +340,76 @@ export class GitHubWebhookHandler {
             createdAt: new Date().toISOString(),
         })
 
+        // Auto-labeling on PR open or synchronize
+        if (payload.action === 'opened' || payload.action === 'synchronize') {
+            try {
+                await this.autoLabel(payload)
+            } catch (error) {
+                console.error('[auto-label] Error:', error)
+            }
+        }
+
+        // Auto-release on PR merge
+        if (payload.action === 'closed' && pr.merged) {
+            try {
+                await this.handleAutoRelease(payload)
+            } catch (error) {
+                console.error('[auto-release] Error:', error)
+            }
+        }
+
         return null
+    }
+
+    private async autoLabel(payload: PullRequestPayload): Promise<void> {
+        if (!payload.repository?.full_name) return
+        if (!payload.installation?.id) return
+
+        const { owner, repo } = splitFullName(payload.repository.full_name)
+        const pr = payload.pull_request
+
+        const gh = await GitHubInstallationClient.create(payload.installation.id, this.tokenCache)
+
+        // Get PR files
+        const files = await gh.getPullFiles(owner, repo, pr.number)
+
+        // Use auto-label function from core
+        const { autoLabel } = await import('core')
+        await autoLabel(gh, owner, repo, pr.number, pr.title, files)
+    }
+
+    private async handleAutoRelease(payload: PullRequestPayload): Promise<void> {
+        if (!payload.repository?.full_name) return
+        if (!payload.installation?.id) return
+
+        const labels = payload.pull_request.labels?.map((l: any) => l.name) ?? []
+
+        // Check for release:skip
+        if (labels.includes('release:skip')) return
+
+        // Determine bump type
+        const releaseLabel = labels.find((l: string) => l.startsWith('release:'))
+        const bumpType = releaseLabel?.split(':')[1] as 'major' | 'minor' | 'patch' | undefined
+
+        if (!bumpType || !['major', 'minor', 'patch'].includes(bumpType)) {
+            // Check default bump
+            const defaultBump = Bun.env.B68_DEFAULT_BUMP as 'major' | 'minor' | 'patch' | undefined
+            if (!defaultBump || !['major', 'minor', 'patch'].includes(defaultBump)) return
+
+            // Use default bump
+            const { owner, repo } = splitFullName(payload.repository.full_name)
+            const gh = await GitHubInstallationClient.create(payload.installation.id, this.tokenCache)
+
+            const { autoRelease } = await import('core')
+            await autoRelease(gh, owner, repo, defaultBump, payload.pull_request.merge_commit_sha ?? '', payload.pull_request.number)
+            return
+        }
+
+        const { owner, repo } = splitFullName(payload.repository.full_name)
+        const gh = await GitHubInstallationClient.create(payload.installation.id, this.tokenCache)
+
+        const { autoRelease } = await import('core')
+        await autoRelease(gh, owner, repo, bumpType, payload.pull_request.merge_commit_sha ?? '', payload.pull_request.number)
     }
 
     private async handlePullRequestReview(payload: PullRequestReviewPayload): Promise<string | null> {

@@ -1,4 +1,6 @@
 import { reconcileWorkItems } from './jobs/reconcile-work-items'
+import { runStaleCheck } from './jobs/stale-check'
+import { sendDigest } from './jobs/digest'
 import { createLogger, defaultDbPath, loadGitHubAppConfig, PilotStore } from 'core'
 import { Cron } from 'croner'
 
@@ -8,12 +10,13 @@ const store = new PilotStore(defaultDbPath(Bun.env))
 
 log.info('Scheduling worker...')
 
-const cron = new Cron('*/5 * * * *', {
-    name: 'gh-worker',
+// Reconciliation job - every 5 minutes
+const reconcileCron = new Cron('*/5 * * * *', {
+    name: 'reconcile',
     timezone: 'Asia/Kolkata',
 })
 
-cron.schedule(async () => {
+reconcileCron.schedule(async () => {
     log.info('Running reconciliation worker...')
     try {
         await reconcileWorkItems(config, store)
@@ -23,11 +26,45 @@ cron.schedule(async () => {
     }
 })
 
+// Stale check job - daily at midnight
+const staleCron = new Cron('0 0 * * *', {
+    name: 'stale-check',
+    timezone: 'Asia/Kolkata',
+})
+
+staleCron.schedule(async () => {
+    log.info('Running stale check...')
+    try {
+        await runStaleCheck(config, store)
+        log.info('Stale check completed')
+    } catch (error) {
+        log.error('Stale check error', { error: String(error) })
+    }
+})
+
+// Digest summary job - daily at 9 AM
+const digestCron = new Cron('0 9 * * *', {
+    name: 'digest',
+    timezone: 'Asia/Kolkata',
+})
+
+digestCron.schedule(async () => {
+    log.info('Running digest summary...')
+    try {
+        await sendDigest(store)
+        log.info('Digest summary completed')
+    } catch (error) {
+        log.error('Digest summary error', { error: String(error) })
+    }
+})
+
 log.info('Worker scheduled successfully')
 
 function shutdown(signal: string) {
     log.info(`Received ${signal}, shutting down...`)
-    cron.stop()
+    reconcileCron.stop()
+    staleCron.stop()
+    digestCron.stop()
     store.close()
     process.exit(0)
 }

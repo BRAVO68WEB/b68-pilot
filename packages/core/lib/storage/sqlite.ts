@@ -140,6 +140,33 @@ export class PilotStore {
         return 0
     }
 
+    // Auto-merge queue operations
+    addToAutoMergeQueue(repo: string, pullNumber: number, installationId: number, requestedBy: string): void {
+        this.db.run(`
+            INSERT OR REPLACE INTO auto_merge_queue (repository_full_name, pull_number, installation_id, requested_by, requested_at, status)
+            VALUES (?, ?, ?, ?, ?, 'pending')
+        `, [repo, pullNumber, installationId, requestedBy, new Date().toISOString()])
+    }
+
+    removeFromAutoMergeQueue(repo: string, pullNumber: number): void {
+        this.db.run(`
+            DELETE FROM auto_merge_queue WHERE repository_full_name = ? AND pull_number = ?
+        `, [repo, pullNumber])
+    }
+
+    getAutoMergePR(repo: string, pullNumber: number): { status: string } | null {
+        const row = this.db.query<{ status: string }, [string, number]>(
+            `SELECT status FROM auto_merge_queue WHERE repository_full_name = ? AND pull_number = ?`
+        ).get(repo, pullNumber)
+        return row ?? null
+    }
+
+    updateAutoMergeStatus(repo: string, pullNumber: number, status: string): void {
+        this.db.run(`
+            UPDATE auto_merge_queue SET status = ? WHERE repository_full_name = ? AND pull_number = ?
+        `, [status, repo, pullNumber])
+    }
+
     listWorkItems(repo?: string): WorkItem[] {
         const rows = repo
             ? this.db.query<StoredWorkItemRow, [string]>(`select * from work_items where repository_full_name = ? order by updated_at desc`).all(repo)
@@ -197,6 +224,18 @@ export class PilotStore {
                 requested_reviewers_json text not null,
                 updated_at text not null,
                 created_at text not null
+            )
+        `)
+        this.db.run(`
+            create table if not exists auto_merge_queue(
+                id integer primary key autoincrement,
+                repository_full_name text not null,
+                pull_number integer not null,
+                installation_id integer not null,
+                requested_by text,
+                requested_at text not null,
+                status text not null default 'pending',
+                unique(repository_full_name, pull_number)
             )
         `)
     }

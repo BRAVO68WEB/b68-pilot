@@ -1,4 +1,4 @@
-export type BotCommandName = 'close' | 'approve' | 'merge' | 'summarize' | 'status'
+export type BotCommandName = 'close' | 'approve' | 'merge' | 'summarize' | 'status' | 'tag' | 'release' | 'automerge' | 'stale' | 'stats'
 
 export interface ParsedBotCommand {
     command: BotCommandName
@@ -20,6 +20,13 @@ const COMMAND_ALIASES: Record<string, BotCommandName> = {
     summarize: 'summarize',
     summary: 'summarize',
     status: 'status',
+    tag: 'tag',
+    release: 'release',
+    automerge: 'automerge',
+    'auto-merge': 'automerge',
+    stale: 'stale',
+    stats: 'stats',
+    statistics: 'stats',
     ...LEGACY_COMMANDS,
 }
 

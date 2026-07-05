@@ -96,6 +96,99 @@ export class GitHubInstallationClient {
     }>> {
         return this.request('GET', `/repos/${owner}/${repo}/pulls?state=open&per_page=100`)
     }
+
+    // Tag operations
+    async getLatestTag(owner: string, repo: string): Promise<{ name: string; sha: string } | null> {
+        const tags = await this.request<Array<{ name: string; commit: { sha: string } }>>(
+            'GET',
+            `/repos/${owner}/${repo}/tags?per_page=1`
+        )
+        return tags.length > 0 ? { name: tags[0].name, sha: tags[0].commit.sha } : null
+    }
+
+    async createTag(owner: string, repo: string, tag: string, sha: string, message: string): Promise<{ sha: string }> {
+        return this.request('POST', `/repos/${owner}/${repo}/git/tags`, {
+            tag,
+            message,
+            object: sha,
+            type: 'commit'
+        })
+    }
+
+    async createRef(owner: string, repo: string, ref: string, sha: string): Promise<void> {
+        await this.request('POST', `/repos/${owner}/${repo}/git/refs`, { ref, sha })
+    }
+
+    async listTags(owner: string, repo: string): Promise<Array<{ name: string }>> {
+        return this.request('GET', `/repos/${owner}/${repo}/tags?per_page=100`)
+    }
+
+    // Release operations
+    async createRelease(owner: string, repo: string, options: {
+        tag_name: string
+        name?: string
+        body?: string
+        draft?: boolean
+        prerelease?: boolean
+        target_commitish?: string
+    }): Promise<{ html_url: string; id: number }> {
+        return this.request('POST', `/repos/${owner}/${repo}/releases`, options)
+    }
+
+    // PR operations
+    async getClosedPullsSince(owner: string, repo: string, since: string): Promise<Array<{
+        number: number
+        title: string
+        html_url: string
+        merged_at: string | null
+        user?: { login: string }
+        labels?: Array<{ name: string }>
+    }>> {
+        return this.request('GET', `/repos/${owner}/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=100`)
+    }
+
+    async getPullFiles(owner: string, repo: string, prNumber: number): Promise<Array<{
+        filename: string
+        additions: number
+        deletions: number
+        status: string
+    }>> {
+        return this.request('GET', `/repos/${owner}/${repo}/pulls/${prNumber}/files`)
+    }
+
+    async getLabels(owner: string, repo: string, issueNumber: number): Promise<Array<{ name: string }>> {
+        return this.request('GET', `/repos/${owner}/${repo}/issues/${issueNumber}/labels`)
+    }
+
+    async addLabels(owner: string, repo: string, issueNumber: number, labels: string[]): Promise<void> {
+        await this.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/labels`, { labels })
+    }
+
+    async removeLabel(owner: string, repo: string, issueNumber: number, label: string): Promise<void> {
+        await this.request('DELETE', `/repos/${owner}/${repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`)
+    }
+
+    // Issue operations
+    async getIssuesSince(owner: string, repo: string, since: string): Promise<GitHubIssueLike[]> {
+        return this.request('GET', `/repos/${owner}/${repo}/issues?state=all&since=${since}&per_page=100`)
+    }
+
+    // File operations
+    async getFileContent(owner: string, repo: string, path: string): Promise<{ content: string; sha: string } | null> {
+        try {
+            return await this.request('GET', `/repos/${owner}/${repo}/contents/${path}`)
+        } catch {
+            return null
+        }
+    }
+
+    async updateFile(owner: string, repo: string, path: string, message: string, content: string, sha?: string): Promise<void> {
+        await this.request('PUT', `/repos/${owner}/${repo}/contents/${path}`, {
+            message,
+            content: Buffer.from(content).toString('base64'),
+            sha
+        })
+    }
 }
 
 export type { InstallationAccessToken }
