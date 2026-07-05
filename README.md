@@ -1,10 +1,10 @@
-# b68-pilot, the engine for @b68web
+# b68-pilot, the engine for [@b68-pilot](https://github.com/apps/b68-pilot)
 
 <p align="center">
     <img src="./assets/b68-pilot.png" alt="b68-pilot" width="600" height="200" />
 </p>
 
-[@b68web](https://github.com/b68web)'s GitHub App bot to manage GitHub activities.
+[@b68-pilot](https://github.com/apps/b68-pilot) is [@Bravo68web](https://github.com/Bravo68web)'s GitHub App bot to manage their GitHub activities.
 
 ## ✨ Features
 
