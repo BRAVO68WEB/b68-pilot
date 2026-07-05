@@ -1,4 +1,8 @@
-# b68-pilot
+# b68-pilot, the engine for @b68web
+
+<p align="center">
+    <img src="./assets/b68-pilot.png" alt="b68-pilot" width="600" height="200" />
+</p>
 
 [@b68web](https://github.com/b68web)'s GitHub App bot to manage GitHub activities.
 
@@ -152,4 +156,9 @@ Use a tunnel such as ngrok for local webhook testing and point the app webhook U
 
 ## License
 
-[MIT](./LICENSE)
+This project is Open Sourced and powered by [MIT](./LICENSE) License.
+
+## Acknowledgements
+
+- [The Main Character Art](https://www.pixiv.net/en/artworks/146856884) - by [最速のゆっくり](https://www.pixiv.net/en/users/12244076)
+- [UwU Face Art](https://www.magnific.com/premium-psd/kawaii-face-expression_94532993.htm) - by [freepik](https://www.magnific.com/author/freepik)
