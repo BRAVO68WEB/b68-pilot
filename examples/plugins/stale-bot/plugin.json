@@ -1,0 +1,35 @@
+{
+  "name": "stale-bot",
+  "version": "1.0.0",
+  "description": "Auto-close stale issues and PRs after inactivity",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label", "github:close"],
+  "events": ["issues", "pull_request"],
+  "settings": [
+    {
+      "key": "staleDays",
+      "label": "Days before marking stale",
+      "type": "number",
+      "default": 30
+    },
+    {
+      "key": "closeDays",
+      "label": "Days before closing",
+      "type": "number",
+      "default": 7
+    },
+    {
+      "key": "staleLabel",
+      "label": "Stale label",
+      "type": "string",
+      "default": "stale"
+    },
+    {
+      "key": "exemptLabels",
+      "label": "Exempt labels",
+      "type": "json",
+      "default": ["pinned", "security", "bug"]
+    }
+  ]
+}

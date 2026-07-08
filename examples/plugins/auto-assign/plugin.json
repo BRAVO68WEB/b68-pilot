@@ -1,0 +1,28 @@
+{
+  "name": "auto-assign",
+  "version": "1.0.0",
+  "description": "Auto-assign PRs to team members using round-robin",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:assign"],
+  "events": ["pull_request"],
+  "settings": [
+    {
+      "key": "reviewers",
+      "label": "Reviewers",
+      "type": "json",
+      "default": ["user1", "user2", "user3"]
+    },
+    {
+      "key": "strategy",
+      "label": "Assignment Strategy",
+      "type": "select",
+      "options": [
+        { "label": "Round Robin", "value": "round-robin" },
+        { "label": "Random", "value": "random" },
+        { "label": "Load Balanced", "value": "load-balanced" }
+      ],
+      "default": "round-robin"
+    }
+  ]
+}

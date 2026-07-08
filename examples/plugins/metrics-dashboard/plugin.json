@@ -1,0 +1,34 @@
+{
+  "name": "metrics-dashboard",
+  "version": "1.0.0",
+  "description": "Track and report repository metrics",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment"],
+  "events": ["issues", "pull_request"],
+  "commands": ["metrics", "weekly-report"],
+  "settings": [
+    {
+      "key": "trackMetrics",
+      "label": "Track Metrics",
+      "type": "json",
+      "default": ["issues_opened", "issues_closed", "prs_opened", "prs_merged", "first_response_time"]
+    },
+    {
+      "key": "weeklyReport",
+      "label": "Weekly Report",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "reportDay",
+      "label": "Report Day",
+      "type": "select",
+      "options": [
+        { "label": "Monday", "value": "monday" },
+        { "label": "Friday", "value": "friday" }
+      ],
+      "default": "monday"
+    }
+  ]
+}

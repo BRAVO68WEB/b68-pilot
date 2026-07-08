@@ -1,0 +1,18 @@
+{
+  "name": "pr-checklist",
+  "version": "1.0.0",
+  "description": "Auto-post review checklist on PR open",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment"],
+  "events": ["pull_request"],
+  "commands": ["checklist"],
+  "settings": [
+    {
+      "key": "checklistItems",
+      "label": "Checklist Items",
+      "type": "json",
+      "default": ["Tests pass", "Docs updated", "No breaking changes"]
+    }
+  ]
+}
