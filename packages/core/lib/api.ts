@@ -55,8 +55,8 @@ export class GitHub {
 
     async mergePR(url: string): Promise<unknown> {
         return this.request(IMethod.PUT, pathFromUrl(url) + '/merge', {
-            commit_title: 'Merged by @b68web',
-            commit_message: 'Merged by @b68web',
+            commit_title: 'Merged by @gh-pilot',
+            commit_message: 'Merged by @gh-pilot',
         })
     }
 }

@@ -58,7 +58,7 @@ export class GitHubInstallationClient {
         return this.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, { body })
     }
 
-    async approvePull(owner: string, repo: string, pullNumber: number, body = 'Approved by b68-pilot.'): Promise<unknown> {
+    async approvePull(owner: string, repo: string, pullNumber: number, body = 'Approved by gh-pilot.'): Promise<unknown> {
         return this.request('POST', `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
             event: 'APPROVE',
             body,
@@ -67,8 +67,8 @@ export class GitHubInstallationClient {
 
     async mergePull(owner: string, repo: string, pullNumber: number): Promise<unknown> {
         return this.request('PUT', `/repos/${owner}/${repo}/pulls/${pullNumber}/merge`, {
-            commit_title: `Merge pull request #${pullNumber} from b68-pilot`,
-            commit_message: 'Merged by b68-pilot.',
+            commit_title: `Merge pull request #${pullNumber} from gh-pilot`,
+            commit_message: 'Merged by gh-pilot.',
         })
     }
 
