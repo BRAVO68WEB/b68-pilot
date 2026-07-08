@@ -1,0 +1,37 @@
+{
+  "name": "changelog-generator",
+  "version": "1.0.0",
+  "description": "Auto-generate CHANGELOG.md from merged PRs",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment"],
+  "events": ["pull_request"],
+  "commands": ["changelog"],
+  "settings": [
+    {
+      "key": "changelogPath",
+      "label": "Changelog Path",
+      "type": "string",
+      "default": "CHANGELOG.md"
+    },
+    {
+      "key": "autoUpdate",
+      "label": "Auto-update on Merge",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "categories",
+      "label": "Categories",
+      "type": "json",
+      "default": {
+        "Added": ["feat"],
+        "Fixed": ["fix"],
+        "Changed": ["refactor"],
+        "Deprecated": ["deprecate"],
+        "Removed": ["remove"],
+        "Security": ["security"]
+      }
+    }
+  ]
+}

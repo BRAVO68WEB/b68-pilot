@@ -1,0 +1,35 @@
+{
+  "name": "contributor-welcome",
+  "version": "1.0.0",
+  "description": "Welcome new contributors with personalized messages",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label"],
+  "events": ["pull_request"],
+  "settings": [
+    {
+      "key": "welcomeMessage",
+      "label": "Welcome Message",
+      "type": "string",
+      "default": "## 👋 Welcome to the project!\n\nThank you for your first contribution! Here are some helpful resources:\n\n- 📖 [Contributing Guide](CONTRIBUTING.md)\n- 📋 [Code of Conduct](CODE_OF_CONDUCT.md)\n- 💬 [Discussion Forum](https://github.com/{repo}/discussions)\n\nA maintainer will review your PR soon. Feel free to ask questions!"
+    },
+    {
+      "key": "goodFirstIssueLabel",
+      "label": "Good First Issue Label",
+      "type": "string",
+      "default": "good first issue"
+    },
+    {
+      "key": "suggestGoodFirstIssues",
+      "label": "Suggest Good First Issues",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoLabel",
+      "label": "Auto-label First PR",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}

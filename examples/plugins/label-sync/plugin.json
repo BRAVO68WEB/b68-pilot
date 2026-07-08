@@ -1,0 +1,25 @@
+{
+  "name": "label-sync",
+  "version": "1.0.0",
+  "description": "Sync labels across repositories",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:label"],
+  "events": ["pull_request"],
+  "commands": ["sync-labels"],
+  "settings": [
+    {
+      "key": "sourceRepo",
+      "label": "Source Repository",
+      "type": "string",
+      "description": "Repository to sync labels from (owner/repo)"
+    },
+    {
+      "key": "autoSync",
+      "label": "Auto Sync",
+      "type": "boolean",
+      "default": false,
+      "description": "Automatically sync labels on PR open"
+    }
+  ]
+}

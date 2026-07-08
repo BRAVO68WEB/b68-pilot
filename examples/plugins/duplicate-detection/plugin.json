@@ -1,0 +1,42 @@
+{
+  "name": "duplicate-detection",
+  "version": "1.0.0",
+  "description": "AI-powered duplicate issue detection",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label"],
+  "events": ["issues"],
+  "settings": [
+    {
+      "key": "similarityThreshold",
+      "label": "Similarity Threshold",
+      "type": "number",
+      "default": 0.7,
+      "description": "Minimum similarity score (0-1) to flag as duplicate"
+    },
+    {
+      "key": "searchClosed",
+      "label": "Search Closed Issues",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "maxResults",
+      "label": "Max Results",
+      "type": "number",
+      "default": 5
+    },
+    {
+      "key": "autoLabel",
+      "label": "Auto-label Duplicates",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoClose",
+      "label": "Auto-close High Confidence Duplicates",
+      "type": "boolean",
+      "default": false
+    }
+  ]
+}

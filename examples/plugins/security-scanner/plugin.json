@@ -1,0 +1,42 @@
+{
+  "name": "security-scanner",
+  "version": "1.0.0",
+  "description": "Automated security vulnerability detection in PRs",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label"],
+  "events": ["pull_request"],
+  "commands": ["security-check"],
+  "settings": [
+    {
+      "key": "checkSecrets",
+      "label": "Check for Secrets",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "checkVulnerabilities",
+      "label": "Check Vulnerabilities",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "checkDependencies",
+      "label": "Check Dependencies",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "severityThreshold",
+      "label": "Severity Threshold",
+      "type": "select",
+      "options": [
+        { "label": "Low", "value": "low" },
+        { "label": "Medium", "value": "medium" },
+        { "label": "High", "value": "high" },
+        { "label": "Critical", "value": "critical" }
+      ],
+      "default": "medium"
+    }
+  ]
+}

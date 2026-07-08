@@ -1,0 +1,51 @@
+{
+  "name": "issue-triage",
+  "version": "1.0.0",
+  "description": "AI-powered issue triage with auto-labeling and categorization",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label"],
+  "events": ["issues"],
+  "settings": [
+    {
+      "key": "useAI",
+      "label": "Use AI Analysis",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoLabel",
+      "label": "Auto-label Issues",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoAssign",
+      "label": "Auto-assign to Team",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "priorityRules",
+      "label": "Priority Rules",
+      "type": "json",
+      "default": {
+        "critical": ["security", "data loss", "production down"],
+        "high": ["breaking", "regression", "blocking"],
+        "medium": ["bug", "enhancement"],
+        "low": ["question", "documentation", "typo"]
+      }
+    },
+    {
+      "key": "categoryLabels",
+      "label": "Category Labels",
+      "type": "json",
+      "default": {
+        "bug": ["crash", "error", "fail", "broken", "not working"],
+        "enhancement": ["feature", "request", "improvement", "add"],
+        "question": ["how", "why", "what", "help", "support"],
+        "documentation": ["doc", "readme", "typo", "spelling"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "response-templates",
+  "version": "1.0.0",
+  "description": "Automated response templates for common issues",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment"],
+  "events": ["issues", "issue_comment"],
+  "commands": ["template"],
+  "settings": [
+    {
+      "key": "templates",
+      "label": "Response Templates",
+      "type": "json",
+      "default": {
+        "duplicate": "This issue appears to be a duplicate of #{issue_number}. Please check if that issue resolves your problem.",
+        "needs-info": "Could you provide more information?\n\n- What version are you using?\n- What are the steps to reproduce?\n- What did you expect to happen?",
+        "wontfix": "Thank you for opening this issue. After careful consideration, we've decided not to fix this because {reason}.",
+        "help": "This sounds like a question rather than a bug report. Please check our documentation at {docs_url} or ask on Stack Overflow.",
+        "acknowledged": "Thank you for reporting this! We've acknowledged the issue and will investigate."
+      }
+    },
+    {
+      "key": "autoRespond",
+      "label": "Auto-respond to Patterns",
+      "type": "boolean",
+      "default": false
+    }
+  ]
+}
