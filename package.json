@@ -1,5 +1,5 @@
 {
-  "name": "b68web-bot",
+  "name": "gh-pilot",
   "module": "index.ts",
   "type": "module",
   "workspaces": [
@@ -10,6 +10,9 @@
     "build:cli": "cd packages/cli && bun run build",
     "build:worker": "cd packages/worker && bun run build",
     "build:core": "cd packages/core && bun run build",
+    "build:dashboard": "cd packages/dashboard && bun run build",
+    "dev:dashboard": "cd packages/dashboard && bun run dev",
+    "dev:worker": "cd packages/worker && bun run webhook",
     "test": "cd packages/core && bun test"
   },
   "dependencies": {
