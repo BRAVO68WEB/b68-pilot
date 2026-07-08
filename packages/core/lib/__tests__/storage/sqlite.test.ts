@@ -3,7 +3,7 @@ import { PilotStore } from '../../storage/sqlite'
 import type { StoredWorkItem } from '../../work-items/model'
 import { unlinkSync } from 'node:fs'
 
-const TEST_DB = '/tmp/b68-pilot-test-' + crypto.randomUUID() + '.sqlite'
+const TEST_DB = '/tmp/gh-pilot-test-' + crypto.randomUUID() + '.sqlite'
 
 function makeStoredItem(overrides: Partial<StoredWorkItem> & { id: string }): StoredWorkItem {
     return {
