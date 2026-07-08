@@ -1,9 +1,11 @@
 import {
+    ConfigStore,
     executeBotCommand,
     GitHubAppClient,
     GitHubInstallationClient,
     InstallationTokenCache,
     PilotStore,
+    PluginManager,
     splitFullName,
     type GitHubAppConfig,
     type StoredWorkItem,
@@ -11,6 +13,7 @@ import {
     type WorkItemType,
     workItemId,
 } from 'core'
+import type { WebhookEvent, TriggerEvent, PluginContext } from '@pilot/plugin-sdk'
 
 export interface GitHubWebhookEnvelope {
     deliveryId: string
@@ -152,12 +155,20 @@ interface IssueLike {
 
 export class GitHubWebhookHandler {
     private readonly tokenCache: InstallationTokenCache
+    private readonly configStore: ConfigStore
+    private pluginManager: PluginManager | null = null
 
     constructor(
         private readonly config: GitHubAppConfig,
         private readonly store: PilotStore
     ) {
         this.tokenCache = new InstallationTokenCache(new GitHubAppClient(config))
+        this.configStore = new ConfigStore(store)
+    }
+
+    /** Set the plugin manager (called after initialization) */
+    setPluginManager(manager: PluginManager): void {
+        this.pluginManager = manager
     }
 
     async handle(envelope: GitHubWebhookEnvelope): Promise<{ ok: boolean; ignored?: string; command?: string | null }> {
@@ -198,14 +209,105 @@ export class GitHubWebhookHandler {
             return { ok: true, ignored: 'missing installation' }
         }
 
+        const repo = payload.repository?.full_name ?? 'unknown'
+        const webhookEvent: WebhookEvent = {
+            event: envelope.event,
+            action: payload.action ?? '',
+            payload: payload as any,
+            installationId: payload.installation.id,
+            repo,
+            deliveryId: envelope.deliveryId,
+            receivedAt,
+        }
+
         try {
+            // ─── Plugin onEntry hooks ─────────────────────────────────
+            if (this.pluginManager) {
+                const ctx = this.createPluginContext(repo, payload.installation.id)
+                await this.pluginManager.executeEntryHooks(webhookEvent, ctx)
+            }
+
+            // ─── Core event dispatch ─────────────────────────────────
             const result = await this.dispatch(envelope.event, payload)
+
+            // ─── Plugin onTrigger hooks ──────────────────────────────
+            if (this.pluginManager) {
+                const triggerEvent: TriggerEvent = {
+                    ...webhookEvent,
+                    issueNumber: this.extractIssueNumber(payload),
+                    isPullRequest: this.extractIsPullRequest(payload),
+                    sender: payload.sender?.login,
+                    labels: this.extractLabels(payload),
+                    title: this.extractTitle(payload),
+                    body: this.extractBody(payload),
+                }
+                const ctx = this.createPluginContext(repo, payload.installation.id)
+                const pluginResult = await this.pluginManager.executeTriggerHooks(triggerEvent, ctx)
+                if (pluginResult?.message) {
+                    // Post plugin's message as a comment
+                    const issueNum = this.extractIssueNumber(payload)
+                    if (issueNum) {
+                        const { owner, repo: repoName } = splitFullName(repo)
+                        const gh = await GitHubInstallationClient.create(payload.installation.id, this.tokenCache)
+                        await gh.comment(owner, repoName, issueNum, pluginResult.message)
+                    }
+                }
+            }
+
+            // ─── Plugin onExit hooks ─────────────────────────────────
+            if (this.pluginManager) {
+                const ctx = this.createPluginContext(repo, payload.installation.id)
+                await this.pluginManager.executeExitHooks(webhookEvent, ctx)
+            }
+
             this.mark(envelope, payload, receivedAt, 'processed')
             return { ok: true, ...result }
         } catch (error) {
+            // ─── Plugin onError hooks ────────────────────────────────
+            if (this.pluginManager) {
+                const ctx = this.createPluginContext(repo, payload.installation.id)
+                await this.pluginManager.executeErrorHooks(error as Error, webhookEvent, ctx)
+            }
+
             this.mark(envelope, payload, receivedAt, 'failed', String(error))
             throw error
         }
+    }
+
+    private createPluginContext(repo: string, installationId: number): (pluginName: string) => PluginContext {
+        return (pluginName: string) => ({
+            github: createPluginGitHubClient(this.tokenCache, installationId),
+            store: createPluginDataStore(this.store, pluginName),
+            config: this.configStore.getRepo(repo),
+            logger: createPluginLogger(pluginName),
+            installationId,
+            repo,
+        })
+    }
+
+    private extractIssueNumber(payload: BaseWebhookPayload): number | undefined {
+        const p = payload as any
+        return p.issue?.number ?? p.pull_request?.number
+    }
+
+    private extractIsPullRequest(payload: BaseWebhookPayload): boolean {
+        const p = payload as any
+        return Boolean(p.pull_request ?? p.issue?.pull_request)
+    }
+
+    private extractLabels(payload: BaseWebhookPayload): string[] {
+        const p = payload as any
+        return p.pull_request?.labels?.map((l: any) => l.name) ?? p.issue?.labels?.map((l: any) => l.name) ?? []
+    }
+
+    private extractTitle(payload: BaseWebhookPayload): string | undefined {
+        const p = payload as any
+        return p.pull_request?.title ?? p.issue?.title
+    }
+
+    private extractBody(payload: BaseWebhookPayload): string | undefined {
+        const p = payload as any
+        return p.pull_request?.body ?? p.issue?.body
     }
 
     private async dispatch(
@@ -284,6 +386,7 @@ export class GitHubWebhookHandler {
             isPullRequest,
             commentBody: payload.comment.body,
             installationId: payload.installation.id,
+            triggeredBy: payload.sender?.login,
         })
 
         if (result) {
@@ -393,7 +496,7 @@ export class GitHubWebhookHandler {
 
         if (!bumpType || !['major', 'minor', 'patch'].includes(bumpType)) {
             // Check default bump
-            const defaultBump = Bun.env.B68_DEFAULT_BUMP as 'major' | 'minor' | 'patch' | undefined
+            const defaultBump = Bun.env.GH_PILOT_DEFAULT_BUMP as 'major' | 'minor' | 'patch' | undefined
             if (!defaultBump || !['major', 'minor', 'patch'].includes(defaultBump)) return
 
             // Use default bump
@@ -559,5 +662,108 @@ function issueToWorkItem(
         state: state ?? (issue.state === 'open' ? 'open' : 'closed'),
         updatedAt: issue.updated_at,
         createdAt: new Date().toISOString(),
+    }
+}
+
+/** Create a plugin-compatible GitHub client from the token cache */
+function createPluginGitHubClient(tokenCache: InstallationTokenCache, installationId: number) {
+    return {
+        async comment(owner: string, repo: string, issueNumber: number, body: string) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.comment(owner, repo, issueNumber, body)
+        },
+        async closeIssue(owner: string, repo: string, issueNumber: number) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.closeIssueOrPull(`/repos/${owner}/${repo}/issues/${issueNumber}`)
+        },
+        async getIssue(owner: string, repo: string, issueNumber: number) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            return gh.get(`/repos/${owner}/${repo}/issues/${issueNumber}`)
+        },
+        async addLabels(owner: string, repo: string, issueNumber: number, labels: string[]) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.addLabels(owner, repo, issueNumber, labels)
+        },
+        async removeLabel(owner: string, repo: string, issueNumber: number, label: string) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.removeLabel(owner, repo, issueNumber, label)
+        },
+        async getLabels(owner: string, repo: string, issueNumber: number) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            return gh.getLabels(owner, repo, issueNumber)
+        },
+        async approvePull(owner: string, repo: string, pullNumber: number, body?: string) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.approvePull(owner, repo, pullNumber, body)
+        },
+        async mergePull(owner: string, repo: string, pullNumber: number) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.mergePull(owner, repo, pullNumber)
+        },
+        async requestChanges(owner: string, repo: string, pullNumber: number, body: string) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.request('POST', `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, { event: 'REQUEST_CHANGES', body })
+        },
+        async getPullFiles(owner: string, repo: string, pullNumber: number) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            return gh.getPullFiles(owner, repo, pullNumber)
+        },
+        async assign(owner: string, repo: string, issueNumber: number, users: string[]) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users })
+        },
+        async unassign(owner: string, repo: string, issueNumber: number, users: string[]) {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            await gh.request('DELETE', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users })
+        },
+        async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+            const gh = await GitHubInstallationClient.create(installationId, tokenCache)
+            return gh.request<T>(method, path, body)
+        },
+    }
+}
+
+/** Create a plugin-compatible data store */
+function createPluginDataStore(store: PilotStore, pluginName: string) {
+    return {
+        async get<T = unknown>(key: string): Promise<T | null> {
+            const row = store.getPluginData(pluginName, key)
+            if (!row) return null
+            try {
+                return JSON.parse(row.value) as T
+            } catch {
+                return row.value as unknown as T
+            }
+        },
+        async set<T = unknown>(key: string, value: T): Promise<void> {
+            const serialized = typeof value === 'string' ? value : JSON.stringify(value)
+            store.setPluginData(pluginName, key, serialized)
+        },
+        async delete(key: string): Promise<void> {
+            store.deletePluginData(pluginName, key)
+        },
+        async list(prefix?: string): Promise<Array<{ key: string; value: unknown }>> {
+            const rows = store.listPluginData(pluginName, prefix)
+            return rows.map((row) => ({
+                key: row.key,
+                value: (() => {
+                    try {
+                        return JSON.parse(row.value)
+                    } catch {
+                        return row.value
+                    }
+                })(),
+            }))
+        },
+    }
+}
+
+/** Create a plugin-compatible logger */
+function createPluginLogger(pluginName: string) {
+    return {
+        info: (msg: string, data?: Record<string, unknown>) => console.log(`[${pluginName}]`, msg, data ?? ''),
+        warn: (msg: string, data?: Record<string, unknown>) => console.warn(`[${pluginName}]`, msg, data ?? ''),
+        error: (msg: string, data?: Record<string, unknown>) => console.error(`[${pluginName}]`, msg, data ?? ''),
+        debug: (msg: string, data?: Record<string, unknown>) => console.debug(`[${pluginName}]`, msg, data ?? ''),
     }
 }
