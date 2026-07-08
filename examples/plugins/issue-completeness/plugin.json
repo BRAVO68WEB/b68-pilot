@@ -1,0 +1,35 @@
+{
+  "name": "issue-completeness",
+  "version": "1.0.0",
+  "description": "Validate issue completeness and request missing information",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label"],
+  "events": ["issues"],
+  "settings": [
+    {
+      "key": "bugTemplate",
+      "label": "Bug Report Requirements",
+      "type": "json",
+      "default": ["steps to reproduce", "expected behavior", "actual behavior", "version"]
+    },
+    {
+      "key": "featureTemplate",
+      "label": "Feature Request Requirements",
+      "type": "json",
+      "default": ["use case", "proposed solution", "alternatives considered"]
+    },
+    {
+      "key": "autoComment",
+      "label": "Auto-comment on Incomplete",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoLabel",
+      "label": "Auto-label Incomplete",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}
