@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Webhook server + API
+  worker:
+    build:
+      context: .
+      dockerfile: packages/worker/Dockerfile
+    ports:
+      - "${GH_PILOT_WEBHOOK_PORT:-3131}:3131"
+    env_file: .env
+    environment:
+      - GH_PILOT_DB_PATH=/app/.data/gh-pilot.sqlite
+    volumes:
+      - pilot-data:/app/.data
+      - ./plugins:/app/plugins
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3131/auth/me').catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Dashboard (development)
+  dashboard:
+    build:
+      context: .
+      dockerfile: packages/dashboard/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://worker:3131
+    depends_on:
+      - worker
+    restart: unless-stopped
+
+volumes:
+  pilot-data:
