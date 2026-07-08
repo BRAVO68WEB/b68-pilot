@@ -1,12 +1,34 @@
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './hooks/useAuth'
+import ErrorBoundary from './components/common/ErrorBoundary'
+import ConnectionStatus from './components/common/ConnectionStatus'
+import LoginPage from './components/auth/LoginPage'
 import RepoList from './components/repos/RepoList'
 import RepoConfig from './components/repos/RepoConfig'
 import PluginList from './components/plugins/PluginList'
+import PluginMarketplace from './components/plugins/PluginMarketplace'
 import CommandList from './components/commands/CommandList'
 import ActivityFeed from './components/activity/ActivityFeed'
 import Stats from './components/activity/Stats'
+import SettingsPage from './components/settings/SettingsPage'
 
-export default function App() {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
+
+function AppLayout() {
+  const { user, logout } = useAuth()
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -30,7 +52,21 @@ export default function App() {
                 <Link to="/activity" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                   Activity
                 </Link>
+                <Link to="/settings" className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                  Settings
+                </Link>
               </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <ConnectionStatus />
+              {user && (
+                <>
+                  <span className="text-sm text-gray-600">{user.login}</span>
+                  <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -39,14 +75,27 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <Routes>
-          <Route path="/" element={<Stats />} />
-          <Route path="/repos" element={<RepoList />} />
-          <Route path="/repos/:owner/:repo" element={<RepoConfig />} />
-          <Route path="/plugins" element={<PluginList />} />
-          <Route path="/commands" element={<CommandList />} />
-          <Route path="/activity" element={<ActivityFeed />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
+          <Route path="/repos" element={<ProtectedRoute><RepoList /></ProtectedRoute>} />
+          <Route path="/repos/:owner/:repo" element={<ProtectedRoute><RepoConfig /></ProtectedRoute>} />
+          <Route path="/plugins" element={<ProtectedRoute><PluginList /></ProtectedRoute>} />
+          <Route path="/plugins/marketplace" element={<ProtectedRoute><PluginMarketplace /></ProtectedRoute>} />
+          <Route path="/commands" element={<ProtectedRoute><CommandList /></ProtectedRoute>} />
+          <Route path="/activity" element={<ProtectedRoute><ActivityFeed /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         </Routes>
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppLayout />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

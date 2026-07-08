@@ -4,13 +4,22 @@ const BASE_URL = '/api'
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include', // Include cookies for auth
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })
+
+  if (res.status === 401) {
+    // Redirect to login on unauthorized
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
+
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(error.error ?? res.statusText)
   }
+
   return res.json()
 }
 

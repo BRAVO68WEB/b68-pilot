@@ -2,12 +2,21 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 
 export type WsMessageHandler = (type: string, data: unknown) => void
 
+interface WsMessage {
+  type: string
+  data: unknown
+  timestamp: string
+}
+
+type MessageHandler = (message: WsMessage) => void
+
 /**
  * WebSocket hook for real-time updates from the worker.
  */
 export function useWebSocket(onMessage?: WsMessageHandler) {
   const wsRef = useRef<WebSocket | null>(null)
   const [connected, setConnected] = useState(false)
+  const handlersRef = useRef<Map<string, Set<MessageHandler>>>(new Map())
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -20,8 +29,16 @@ export function useWebSocket(onMessage?: WsMessageHandler) {
 
     ws.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data)
+        const msg = JSON.parse(event.data) as WsMessage
         onMessage?.(msg.type, msg.data)
+        
+        // Call registered handlers
+        const handlers = handlersRef.current.get(msg.type)
+        if (handlers) {
+          for (const handler of handlers) {
+            handler(msg)
+          }
+        }
       } catch (error) {
         console.error('[ws] Failed to parse message:', error)
       }
@@ -49,5 +66,17 @@ export function useWebSocket(onMessage?: WsMessageHandler) {
     }
   }, [])
 
-  return { connected, send }
+  const subscribe = useCallback((type: string, handler: MessageHandler) => {
+    if (!handlersRef.current.has(type)) {
+      handlersRef.current.set(type, new Set())
+    }
+    handlersRef.current.get(type)!.add(handler)
+
+    // Return unsubscribe function
+    return () => {
+      handlersRef.current.get(type)?.delete(handler)
+    }
+  }, [])
+
+  return { connected, send, subscribe }
 }
