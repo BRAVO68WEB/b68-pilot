@@ -1,0 +1,36 @@
+{
+  "name": "pr-summary",
+  "version": "1.0.0",
+  "description": "Generate comprehensive PR summaries using diff analysis",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment"],
+  "events": ["pull_request"],
+  "commands": ["summarize"],
+  "settings": [
+    {
+      "key": "includeFileList",
+      "label": "Include File List",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "includeStats",
+      "label": "Include Statistics",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "linkIssues",
+      "label": "Auto-link Issues",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "maxFiles",
+      "label": "Max Files to Show",
+      "type": "number",
+      "default": 20
+    }
+  ]
+}

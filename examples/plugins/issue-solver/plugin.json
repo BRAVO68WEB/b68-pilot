@@ -1,0 +1,54 @@
+{
+  "name": "issue-solver",
+  "version": "2.0.0",
+  "description": "AI-powered issue analysis with pattern matching and OpenAI solutions",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label"],
+  "events": ["issues"],
+  "commands": ["suggest"],
+  "settings": [
+    {
+      "key": "useAI",
+      "label": "Use AI Analysis",
+      "type": "boolean",
+      "default": true,
+      "description": "Use OpenAI for advanced analysis (requires OPENAI_API_KEY)"
+    },
+    {
+      "key": "aiModel",
+      "label": "AI Model",
+      "type": "select",
+      "options": [
+        { "label": "GPT-4o Mini (Cost Effective)", "value": "gpt-4o-mini" },
+        { "label": "GPT-4o (Best Quality)", "value": "gpt-4o" },
+        { "label": "GPT-3.5 Turbo (Fastest)", "value": "gpt-3.5-turbo" }
+      ],
+      "default": "gpt-4o-mini"
+    },
+    {
+      "key": "maxSuggestions",
+      "label": "Max Suggestions",
+      "type": "number",
+      "default": 3
+    },
+    {
+      "key": "searchPastIssues",
+      "label": "Search Past Issues",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoLabel",
+      "label": "Auto-label Issues",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "checkDuplicates",
+      "label": "Check for Duplicates",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}

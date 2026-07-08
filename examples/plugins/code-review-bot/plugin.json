@@ -1,0 +1,54 @@
+{
+  "name": "code-review-bot",
+  "version": "2.0.0",
+  "description": "AI-powered code review using OpenAI GPT-4",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment", "github:label", "github:review"],
+  "events": ["pull_request"],
+  "commands": ["review"],
+  "settings": [
+    {
+      "key": "openaiModel",
+      "label": "OpenAI Model",
+      "type": "select",
+      "options": [
+        { "label": "GPT-4o Mini (Cost Effective)", "value": "gpt-4o-mini" },
+        { "label": "GPT-4o (Best Quality)", "value": "gpt-4o" },
+        { "label": "GPT-4 Turbo", "value": "gpt-4-turbo" },
+        { "label": "GPT-3.5 Turbo (Fastest)", "value": "gpt-3.5-turbo" }
+      ],
+      "default": "gpt-4o-mini"
+    },
+    {
+      "key": "maxTokens",
+      "label": "Max Tokens",
+      "type": "number",
+      "default": 4000
+    },
+    {
+      "key": "autoReview",
+      "label": "Auto Review on PR Open",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "autoApprove",
+      "label": "Auto-approve if No Issues",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "requireTests",
+      "label": "Require Tests",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "maxPRSize",
+      "label": "Max PR Size (lines)",
+      "type": "number",
+      "default": 1000
+    }
+  ]
+}
