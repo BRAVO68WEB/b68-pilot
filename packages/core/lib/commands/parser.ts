@@ -1,4 +1,4 @@
-export type BotCommandName = 'close' | 'approve' | 'merge' | 'summarize' | 'status' | 'tag' | 'release' | 'automerge' | 'stale' | 'stats'
+export type BotCommandName = string
 
 export interface ParsedBotCommand {
     command: BotCommandName
@@ -13,7 +13,7 @@ const LEGACY_COMMANDS: Record<string, BotCommandName> = {
     'merge pr': 'merge',
 }
 
-const COMMAND_ALIASES: Record<string, BotCommandName> = {
+const BUILTIN_ALIASES: Record<string, BotCommandName> = {
     close: 'close',
     approve: 'approve',
     merge: 'merge',
@@ -30,12 +30,19 @@ const COMMAND_ALIASES: Record<string, BotCommandName> = {
     ...LEGACY_COMMANDS,
 }
 
+/**
+ * Parse a bot command from a comment body.
+ * Accepts optional extra aliases from CommandRegistry (plugin-registered commands).
+ */
 export function parseBotCommand(
     body: string | null | undefined,
     appSlug: string,
-    legacyMentions = ['b68web']
+    legacyMentions = ['gh-pilot'],
+    extraAliases?: Record<string, string>
 ): ParsedBotCommand | null {
     if (!body || typeof body !== 'string') return null
+
+    const aliases = { ...BUILTIN_ALIASES, ...extraAliases }
 
     const mentions = [appSlug, ...legacyMentions].filter(Boolean)
     for (const mention of mentions) {
@@ -46,8 +53,9 @@ export function parseBotCommand(
         const raw = match[1]?.trim().toLowerCase()
         if (!raw) continue
 
+        // Try full match first (e.g., "close issue"), then first token (e.g., "close v1.2.3")
         const firstToken = raw.split(/\s+/)[0]
-        const command = COMMAND_ALIASES[raw] ?? COMMAND_ALIASES[firstToken]
+        const command = aliases[raw] ?? aliases[firstToken]
         if (!command) return null
 
         return { command, raw, mention }
@@ -59,4 +67,3 @@ export function parseBotCommand(
 function escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
-

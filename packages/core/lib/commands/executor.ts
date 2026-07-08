@@ -1,8 +1,8 @@
 import type { GitHubInstallationClient } from '../github/installation-client'
+import type { CommandResult } from '@pilot/plugin-sdk'
 import { parseBotCommand, type ParsedBotCommand } from './parser'
-import { summarizePullRequest } from './summarize'
-import { autoRelease } from './release'
-import { tagLatestCommit } from './tag'
+import { CommandRegistry } from './registry'
+import { createBuiltinCommands } from './builtin-handlers'
 
 export interface BotCommandContext {
     appSlug: string
@@ -13,103 +13,177 @@ export interface BotCommandContext {
     isPullRequest: boolean
     commentBody: string | null | undefined
     installationId: number
+    triggeredBy?: string
 }
 
 export interface BotCommandResult {
-    command: ParsedBotCommand['command']
+    command: string
     message: string
     acted: boolean
 }
 
+/** Create a CommandRegistry with all built-in commands registered */
+export function createCommandRegistry(gh: GitHubInstallationClient): CommandRegistry {
+    const registry = new CommandRegistry()
+    const builtins = createBuiltinCommands(gh)
+
+    registry.registerBuiltin('close', builtins.close, {
+        aliases: ['close issue', 'close pr'],
+        description: 'Close an issue or pull request',
+    })
+    registry.registerBuiltin('approve', builtins.approve, {
+        aliases: ['approve pr'],
+        description: 'Approve a pull request',
+    })
+    registry.registerBuiltin('merge', builtins.merge, {
+        aliases: ['merge pr'],
+        description: 'Merge a pull request',
+    })
+    registry.registerBuiltin('status', builtins.status, {
+        description: 'Check bot status',
+    })
+    registry.registerBuiltin('summarize', builtins.summarize, {
+        aliases: ['summary'],
+        description: 'Summarize a pull request diff',
+    })
+    registry.registerBuiltin('tag', builtins.tag, {
+        description: 'Create a git tag',
+    })
+    registry.registerBuiltin('release', builtins.release, {
+        description: 'Create a release',
+    })
+    registry.registerBuiltin('automerge', builtins.automerge, {
+        aliases: ['auto-merge'],
+        description: 'Enable auto-merge for a PR',
+    })
+    registry.registerBuiltin('stale', builtins.stale, {
+        description: 'Check or manage stale issues',
+    })
+    registry.registerBuiltin('stats', builtins.stats, {
+        aliases: ['statistics'],
+        description: 'Show activity stats',
+    })
+
+    return registry
+}
+
+/**
+ * Execute a bot command using the CommandRegistry.
+ * This is the new entry point — replaces the old hardcoded if/else executor.
+ */
 export async function executeBotCommand(
     gh: GitHubInstallationClient,
-    context: BotCommandContext
+    context: BotCommandContext,
+    registry?: CommandRegistry
 ): Promise<BotCommandResult | null> {
     const parsed = parseBotCommand(context.commentBody, context.appSlug)
     if (!parsed) return null
 
-    if (parsed.command === 'close') {
-        await gh.closeIssueOrPull(context.issueApiUrl)
-        return { command: parsed.command, acted: true, message: 'Closed.' }
-    }
+    // Use provided registry or create a default one with builtins
+    const cmdRegistry = registry ?? createCommandRegistry(gh)
 
-    if (parsed.command === 'approve') {
-        if (!context.isPullRequest) {
-            return { command: parsed.command, acted: false, message: 'Approve only works on pull requests.' }
-        }
-        await gh.approvePull(context.owner, context.repo, context.issueNumber)
-        return { command: parsed.command, acted: true, message: 'Approved.' }
-    }
+    // Extract args: everything after the command name
+    const args = parsed.raw.split(/\s+/).slice(1)
 
-    if (parsed.command === 'merge') {
-        if (!context.isPullRequest) {
-            return { command: parsed.command, acted: false, message: 'Merge only works on pull requests.' }
-        }
-        await gh.mergePull(context.owner, context.repo, context.issueNumber)
-        return { command: parsed.command, acted: true, message: 'Merged.' }
-    }
+    const result = await cmdRegistry.dispatch(parsed.command, args, {
+        github: createPluginGitHubAdapter(gh),
+        store: createNoopStore(),
+        config: createDefaultConfig(context.repo),
+        logger: createConsoleLogger(),
+        owner: context.owner,
+        repo: context.repo,
+        issueNumber: context.issueNumber,
+        isPullRequest: context.isPullRequest,
+        commentBody: context.commentBody ?? '',
+        installationId: context.installationId,
+        triggeredBy: context.triggeredBy ?? 'unknown',
+    })
 
-    if (parsed.command === 'status') {
-        return { command: parsed.command, acted: false, message: 'I am connected and watching this repository.' }
-    }
+    if (!result) return null
 
-    if (parsed.command === 'summarize') {
-        if (!context.isPullRequest) {
-            return { command: parsed.command, acted: false, message: 'Summarize only works on pull requests.' }
-        }
-        const summary = await summarizePullRequest(gh, context.owner, context.repo, context.issueNumber)
-        return { command: parsed.command, acted: false, message: summary }
+    return {
+        command: parsed.command,
+        message: result.message,
+        acted: result.acted,
     }
-
-    if (parsed.command === 'tag') {
-        const args = parsed.raw.split(/\s+/).slice(1) // Remove 'tag' from args
-        const tagName = args[0]
-        if (!tagName) {
-            return { command: parsed.command, acted: false, message: 'Usage: @bot tag <version> (e.g., @bot tag v1.2.3)' }
-        }
-        await tagLatestCommit(gh, context.owner, context.repo, tagName)
-        return { command: parsed.command, acted: true, message: `Tag ${tagName} created.` }
-    }
-
-    if (parsed.command === 'release') {
-        const args = parsed.raw.split(/\s+/).slice(1) // Remove 'release' from args
-        const version = args[0]
-        if (!version) {
-            return { command: parsed.command, acted: false, message: 'Usage: @bot release <version> (e.g., @bot release v1.2.3)' }
-        }
-        const result = await autoRelease(gh, context.owner, context.repo, 'patch', '', context.issueNumber)
-        if (result) {
-            return { command: parsed.command, acted: true, message: `Release ${result.tag} created: ${result.releaseUrl}` }
-        }
-        return { command: parsed.command, acted: false, message: 'Failed to create release.' }
-    }
-
-    if (parsed.command === 'automerge') {
-        const args = parsed.raw.split(/\s+/).slice(1)
-        if (args[0] === 'cancel') {
-            // TODO: Remove from auto-merge queue
-            return { command: parsed.command, acted: true, message: 'Auto-merge cancelled.' }
-        }
-        // TODO: Add to auto-merge queue
-        return { command: parsed.command, acted: true, message: 'Auto-merge enabled. PR will be merged when approved and checks pass.' }
-    }
-
-    if (parsed.command === 'stale') {
-        const args = parsed.raw.split(/\s+/).slice(1)
-        if (args[0] === '--exclude') {
-            await gh.addLabels(context.owner, context.repo, context.issueNumber, ['pinned'])
-            return { command: parsed.command, acted: true, message: 'This issue has been exempted from stale checks.' }
-        }
-        return { command: parsed.command, acted: false, message: 'Stale check will run on the next scheduled job.' }
-    }
-
-    if (parsed.command === 'stats') {
-        const args = parsed.raw.split(/\s+/).slice(1)
-        const days = parseInt(args[0]) || 7
-        // TODO: Generate stats
-        return { command: parsed.command, acted: false, message: `📊 Stats for last ${days} days will be generated.` }
-    }
-
-    return null
 }
 
+/**
+ * Adapter: bridge GitHubInstallationClient to PluginGitHubClient interface.
+ */
+function createPluginGitHubAdapter(gh: GitHubInstallationClient) {
+    return {
+        comment: (owner: string, repo: string, issueNumber: number, body: string) =>
+            gh.comment(owner, repo, issueNumber, body),
+        closeIssue: (owner: string, repo: string, issueNumber: number) =>
+            gh.closeIssueOrPull(`/repos/${owner}/${repo}/issues/${issueNumber}`),
+        getIssue: async (owner: string, repo: string, issueNumber: number) => {
+            const issue = await gh.get<{ number: number; title: string; body: string | null; state: string; html_url: string; user?: { login: string }; assignees?: Array<{ login: string }>; labels?: Array<{ name: string }> }>(
+                `/repos/${owner}/${repo}/issues/${issueNumber}`
+            )
+            return issue
+        },
+        addLabels: (owner: string, repo: string, issueNumber: number, labels: string[]) =>
+            gh.addLabels(owner, repo, issueNumber, labels),
+        removeLabel: (owner: string, repo: string, issueNumber: number, label: string) =>
+            gh.removeLabel(owner, repo, issueNumber, label),
+        getLabels: (owner: string, repo: string, issueNumber: number) =>
+            gh.getLabels(owner, repo, issueNumber),
+        approvePull: (owner: string, repo: string, pullNumber: number, body?: string) =>
+            gh.approvePull(owner, repo, pullNumber, body),
+        mergePull: (owner: string, repo: string, pullNumber: number) =>
+            gh.mergePull(owner, repo, pullNumber),
+        requestChanges: (owner: string, repo: string, pullNumber: number, body: string) =>
+            gh.request('POST', `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, { event: 'REQUEST_CHANGES', body }),
+        getPullFiles: (owner: string, repo: string, pullNumber: number) =>
+            gh.getPullFiles(owner, repo, pullNumber),
+        assign: (owner: string, repo: string, issueNumber: number, users: string[]) =>
+            gh.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users }),
+        unassign: (owner: string, repo: string, issueNumber: number, users: string[]) =>
+            gh.request('DELETE', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users }),
+        request: <T>(method: string, path: string, body?: unknown) =>
+            gh.request<T>(method, path, body),
+    }
+}
+
+/** No-op store for backward compatibility when no plugin store is available */
+function createNoopStore() {
+    return {
+        get: async () => null,
+        set: async () => {},
+        delete: async () => {},
+        list: async () => [],
+    }
+}
+
+function createDefaultConfig(repo: string) {
+    return {
+        repo,
+        enabled: true,
+        plugins: [],
+        rules: [],
+        commands: [],
+        notifications: {},
+        automation: {
+            autoRelease: true,
+            defaultBump: 'patch' as const,
+            staleDays: 15,
+            staleCloseDays: 7,
+            reviewStrategy: 'round-robin' as const,
+            reviewers: [],
+        },
+    }
+}
+
+function createConsoleLogger() {
+    return {
+        info: (msg: string, data?: Record<string, unknown>) => console.log('[plugin]', msg, data ?? ''),
+        warn: (msg: string, data?: Record<string, unknown>) => console.warn('[plugin]', msg, data ?? ''),
+        error: (msg: string, data?: Record<string, unknown>) => console.error('[plugin]', msg, data ?? ''),
+        debug: (msg: string, data?: Record<string, unknown>) => console.debug('[plugin]', msg, data ?? ''),
+    }
+}
+
+// Re-export for backward compatibility
+export { parseBotCommand } from './parser'
+export type { ParsedBotCommand } from './parser'
