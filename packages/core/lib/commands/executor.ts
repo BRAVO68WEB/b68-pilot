@@ -113,34 +113,43 @@ export async function executeBotCommand(
  */
 function createPluginGitHubAdapter(gh: GitHubInstallationClient) {
     return {
-        comment: (owner: string, repo: string, issueNumber: number, body: string) =>
-            gh.comment(owner, repo, issueNumber, body),
-        closeIssue: (owner: string, repo: string, issueNumber: number) =>
-            gh.closeIssueOrPull(`/repos/${owner}/${repo}/issues/${issueNumber}`),
+        comment: async (owner: string, repo: string, issueNumber: number, body: string): Promise<void> => {
+            await gh.comment(owner, repo, issueNumber, body)
+        },
+        closeIssue: async (owner: string, repo: string, issueNumber: number): Promise<void> => {
+            await gh.closeIssueOrPull(`/repos/${owner}/${repo}/issues/${issueNumber}`)
+        },
         getIssue: async (owner: string, repo: string, issueNumber: number) => {
             const issue = await gh.get<{ number: number; title: string; body: string | null; state: string; html_url: string; user?: { login: string }; assignees?: Array<{ login: string }>; labels?: Array<{ name: string }> }>(
                 `/repos/${owner}/${repo}/issues/${issueNumber}`
             )
             return issue
         },
-        addLabels: (owner: string, repo: string, issueNumber: number, labels: string[]) =>
-            gh.addLabels(owner, repo, issueNumber, labels),
-        removeLabel: (owner: string, repo: string, issueNumber: number, label: string) =>
-            gh.removeLabel(owner, repo, issueNumber, label),
+        addLabels: async (owner: string, repo: string, issueNumber: number, labels: string[]): Promise<void> => {
+            await gh.addLabels(owner, repo, issueNumber, labels)
+        },
+        removeLabel: async (owner: string, repo: string, issueNumber: number, label: string): Promise<void> => {
+            await gh.removeLabel(owner, repo, issueNumber, label)
+        },
         getLabels: (owner: string, repo: string, issueNumber: number) =>
             gh.getLabels(owner, repo, issueNumber),
-        approvePull: (owner: string, repo: string, pullNumber: number, body?: string) =>
-            gh.approvePull(owner, repo, pullNumber, body),
-        mergePull: (owner: string, repo: string, pullNumber: number) =>
-            gh.mergePull(owner, repo, pullNumber),
-        requestChanges: (owner: string, repo: string, pullNumber: number, body: string) =>
-            gh.request('POST', `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, { event: 'REQUEST_CHANGES', body }),
+        approvePull: async (owner: string, repo: string, pullNumber: number, body?: string): Promise<void> => {
+            await gh.approvePull(owner, repo, pullNumber, body)
+        },
+        mergePull: async (owner: string, repo: string, pullNumber: number): Promise<void> => {
+            await gh.mergePull(owner, repo, pullNumber)
+        },
+        requestChanges: async (owner: string, repo: string, pullNumber: number, body: string): Promise<void> => {
+            await gh.request('POST', `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, { event: 'REQUEST_CHANGES', body })
+        },
         getPullFiles: (owner: string, repo: string, pullNumber: number) =>
             gh.getPullFiles(owner, repo, pullNumber),
-        assign: (owner: string, repo: string, issueNumber: number, users: string[]) =>
-            gh.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users }),
-        unassign: (owner: string, repo: string, issueNumber: number, users: string[]) =>
-            gh.request('DELETE', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users }),
+        assign: async (owner: string, repo: string, issueNumber: number, users: string[]): Promise<void> => {
+            await gh.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users })
+        },
+        unassign: async (owner: string, repo: string, issueNumber: number, users: string[]): Promise<void> => {
+            await gh.request('DELETE', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users })
+        },
         request: <T>(method: string, path: string, body?: unknown) =>
             gh.request<T>(method, path, body),
     }

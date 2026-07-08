@@ -5,6 +5,10 @@
  *   onInit → onEntry → onTrigger → onExit
  *   onError fires on any unhandled error during the above.
  */
+import type { PluginContext } from './context'
+import type { TriggerEvent, TriggerResult, WebhookEvent } from './events'
+import type { CommandDefinition } from './commands'
+
 export interface PilotPlugin {
   /** Unique plugin name (used as key in config and data store) */
   name: string

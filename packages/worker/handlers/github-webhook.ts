@@ -13,7 +13,7 @@ import {
     type WorkItemType,
     workItemId,
 } from 'core'
-import type { WebhookEvent, TriggerEvent, PluginContext } from '@pilot/plugin-sdk'
+import type { IssueInfo, PluginContext, WebhookEvent, TriggerEvent } from '@pilot/plugin-sdk'
 
 export interface GitHubWebhookEnvelope {
     deliveryId: string
@@ -668,23 +668,23 @@ function issueToWorkItem(
 /** Create a plugin-compatible GitHub client from the token cache */
 function createPluginGitHubClient(tokenCache: InstallationTokenCache, installationId: number) {
     return {
-        async comment(owner: string, repo: string, issueNumber: number, body: string) {
+        async comment(owner: string, repo: string, issueNumber: number, body: string): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.comment(owner, repo, issueNumber, body)
         },
-        async closeIssue(owner: string, repo: string, issueNumber: number) {
+        async closeIssue(owner: string, repo: string, issueNumber: number): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.closeIssueOrPull(`/repos/${owner}/${repo}/issues/${issueNumber}`)
         },
-        async getIssue(owner: string, repo: string, issueNumber: number) {
+        async getIssue(owner: string, repo: string, issueNumber: number): Promise<IssueInfo> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             return gh.get(`/repos/${owner}/${repo}/issues/${issueNumber}`)
         },
-        async addLabels(owner: string, repo: string, issueNumber: number, labels: string[]) {
+        async addLabels(owner: string, repo: string, issueNumber: number, labels: string[]): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.addLabels(owner, repo, issueNumber, labels)
         },
-        async removeLabel(owner: string, repo: string, issueNumber: number, label: string) {
+        async removeLabel(owner: string, repo: string, issueNumber: number, label: string): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.removeLabel(owner, repo, issueNumber, label)
         },
@@ -692,15 +692,15 @@ function createPluginGitHubClient(tokenCache: InstallationTokenCache, installati
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             return gh.getLabels(owner, repo, issueNumber)
         },
-        async approvePull(owner: string, repo: string, pullNumber: number, body?: string) {
+        async approvePull(owner: string, repo: string, pullNumber: number, body?: string): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.approvePull(owner, repo, pullNumber, body)
         },
-        async mergePull(owner: string, repo: string, pullNumber: number) {
+        async mergePull(owner: string, repo: string, pullNumber: number): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.mergePull(owner, repo, pullNumber)
         },
-        async requestChanges(owner: string, repo: string, pullNumber: number, body: string) {
+        async requestChanges(owner: string, repo: string, pullNumber: number, body: string): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.request('POST', `/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, { event: 'REQUEST_CHANGES', body })
         },
@@ -708,11 +708,11 @@ function createPluginGitHubClient(tokenCache: InstallationTokenCache, installati
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             return gh.getPullFiles(owner, repo, pullNumber)
         },
-        async assign(owner: string, repo: string, issueNumber: number, users: string[]) {
+        async assign(owner: string, repo: string, issueNumber: number, users: string[]): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users })
         },
-        async unassign(owner: string, repo: string, issueNumber: number, users: string[]) {
+        async unassign(owner: string, repo: string, issueNumber: number, users: string[]): Promise<void> {
             const gh = await GitHubInstallationClient.create(installationId, tokenCache)
             await gh.request('DELETE', `/repos/${owner}/${repo}/issues/${issueNumber}/assignees`, { assignees: users })
         },
