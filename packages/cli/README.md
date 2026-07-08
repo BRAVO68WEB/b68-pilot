@@ -28,5 +28,5 @@ bun run index.ts approve owner/repo#123
 bun run index.ts merge owner/repo#123
 ```
 
-CLI tokens are stored at `~/.config/b68-pilot/config.json` with `0600`
+CLI tokens are stored at `~/.config/gh-pilot/config.json` with `0600`
 permissions.
