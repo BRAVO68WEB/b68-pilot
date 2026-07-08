@@ -1,0 +1,37 @@
+{
+  "name": "release-notes",
+  "version": "1.0.0",
+  "description": "Auto-generate release notes from merged PRs",
+  "author": "gh-pilot",
+  "entry": "index.ts",
+  "permissions": ["github:comment"],
+  "events": ["release"],
+  "commands": ["release-notes"],
+  "settings": [
+    {
+      "key": "categories",
+      "label": "PR Categories",
+      "type": "json",
+      "default": {
+        "🚀 Features": ["feat", "feature", "enhancement"],
+        "🐛 Bug Fixes": ["fix", "bugfix", "bug"],
+        "📚 Documentation": ["docs", "documentation"],
+        "🔧 Maintenance": ["chore", "refactor", "style", "ci"],
+        "⚡ Performance": ["perf", "performance"],
+        "🔒 Security": ["security", "vulnerability"]
+      }
+    },
+    {
+      "key": "excludeLabels",
+      "label": "Exclude Labels",
+      "type": "json",
+      "default": ["skip-changelog", "no-release-notes"]
+    },
+    {
+      "key": "autoCreate",
+      "label": "Auto-create Release",
+      "type": "boolean",
+      "default": false
+    }
+  ]
+}
