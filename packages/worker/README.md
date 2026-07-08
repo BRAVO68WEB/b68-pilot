@@ -14,13 +14,13 @@ bun run webhook
 
 Env:
 
-- `B68_GITHUB_APP_ID`
-- `B68_GITHUB_APP_PRIVATE_KEY`
-- `B68_GITHUB_WEBHOOK_SECRET`
-- `B68_GITHUB_CLIENT_ID`
-- `B68_GITHUB_APP_SLUG`
-- `B68_DB_PATH` optional, defaults to `.data/b68-pilot.sqlite`
-- `B68_WEBHOOK_PORT` optional, defaults to `3131`
+- `GH_PILOT_GITHUB_APP_ID`
+- `GH_PILOT_GITHUB_APP_PRIVATE_KEY`
+- `GH_PILOT_GITHUB_WEBHOOK_SECRET`
+- `GH_PILOT_GITHUB_CLIENT_ID`
+- `GH_PILOT_GITHUB_APP_SLUG`
+- `GH_PILOT_DB_PATH` optional, defaults to `.data/gh-pilot.sqlite`
+- `GH_PILOT_WEBHOOK_PORT` optional, defaults to `3131`
 
 Configure the GitHub App webhook URL as:
 

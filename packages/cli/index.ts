@@ -2,6 +2,7 @@ import {
     apiPathFromUrl,
     defaultDbPath,
     DeviceFlowPendingError,
+    discoverPlugins,
     GitHubInstallationClient,
     GitHubUserClient,
     githubRequest,
@@ -23,7 +24,8 @@ interface CliConfig {
     login?: string
 }
 
-const CONFIG_PATH = join(homedir(), '.config', 'b68-pilot', 'config.json')
+const CONFIG_PATH = join(homedir(), '.config', 'gh-pilot', 'config.json')
+const PLUGINS_DIR = join(homedir(), '.config', 'gh-pilot', 'plugins')
 
 async function main(argv: string[]): Promise<void> {
     const [command, ...args] = argv
@@ -46,8 +48,133 @@ async function main(argv: string[]): Promise<void> {
     if (command === 'comment') return comment(args)
     if (command === 'summarize') return summarize(args)
 
+    // Plugin commands
+    if (command === 'plugin') return pluginCommand(args)
+
     throw new Error(`Unknown command: ${command}`)
 }
+
+// ─── Plugin Commands ────────────────────────────────────────────────────
+
+async function pluginCommand(args: string[]): Promise<void> {
+    const [subcommand, ...rest] = args
+
+    if (!subcommand || subcommand === 'help') {
+        printPluginHelp()
+        return
+    }
+
+    if (subcommand === 'list') return pluginList()
+    if (subcommand === 'install') return pluginInstall(rest[0])
+    if (subcommand === 'uninstall') return pluginUninstall(rest[0])
+    if (subcommand === 'info') return pluginInfo(rest[0])
+
+    throw new Error(`Unknown plugin command: ${subcommand}`)
+}
+
+async function pluginList(): Promise<void> {
+    if (!existsSync(PLUGINS_DIR)) {
+        console.log('No plugins directory found. Create it with: mkdir -p ~/.config/gh-pilot/plugins')
+        return
+    }
+
+    const manifests = await discoverPlugins(PLUGINS_DIR)
+    if (manifests.length === 0) {
+        console.log('No plugins installed.')
+        return
+    }
+
+    console.log('Installed plugins:')
+    for (const m of manifests) {
+        console.log(`  ${m.name}@${m.version} - ${m.description ?? 'No description'}`)
+    }
+}
+
+async function pluginInstall(path: string | undefined): Promise<void> {
+    if (!path) {
+        throw new Error('Usage: gh-pilot plugin install <path-to-plugin-directory>')
+    }
+
+    const resolvedPath = path.startsWith('~') ? path.replace('~', homedir()) : path
+    if (!existsSync(resolvedPath)) {
+        throw new Error(`Plugin path not found: ${resolvedPath}`)
+    }
+
+    // Validate plugin has manifest
+    const manifestPath = join(resolvedPath, 'plugin.json')
+    if (!existsSync(manifestPath)) {
+        throw new Error(`No plugin.json found in ${resolvedPath}`)
+    }
+
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+    if (!manifest.name) {
+        throw new Error('plugin.json missing "name" field')
+    }
+
+    // Create plugins directory if needed
+    mkdirSync(PLUGINS_DIR, { recursive: true })
+
+    // Copy plugin to plugins directory (or symlink)
+    const targetDir = join(PLUGINS_DIR, manifest.name)
+    if (existsSync(targetDir)) {
+        rmSync(targetDir, { recursive: true })
+    }
+
+    // Create symlink to the plugin
+    const { symlinkSync } = await import('node:fs')
+    symlinkSync(resolvedPath, targetDir)
+
+    console.log(`Installed plugin: ${manifest.name}@${manifest.version}`)
+    console.log(`Location: ${targetDir}`)
+}
+
+async function pluginUninstall(name: string | undefined): Promise<void> {
+    if (!name) {
+        throw new Error('Usage: gh-pilot plugin uninstall <plugin-name>')
+    }
+
+    const targetDir = join(PLUGINS_DIR, name)
+    if (!existsSync(targetDir)) {
+        throw new Error(`Plugin not found: ${name}`)
+    }
+
+    rmSync(targetDir, { recursive: true })
+    console.log(`Uninstalled plugin: ${name}`)
+}
+
+async function pluginInfo(name: string | undefined): Promise<void> {
+    if (!name) {
+        throw new Error('Usage: gh-pilot plugin info <plugin-name>')
+    }
+
+    const targetDir = join(PLUGINS_DIR, name)
+    if (!existsSync(targetDir)) {
+        throw new Error(`Plugin not found: ${name}`)
+    }
+
+    const manifestPath = join(targetDir, 'plugin.json')
+    if (!existsSync(manifestPath)) {
+        throw new Error(`No plugin.json found for ${name}`)
+    }
+
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+    console.log(`Plugin: ${manifest.name}`)
+    console.log(`Version: ${manifest.version}`)
+    console.log(`Description: ${manifest.description ?? 'N/A'}`)
+    console.log(`Author: ${manifest.author ?? 'N/A'}`)
+    console.log(`Entry: ${manifest.entry}`)
+    if (manifest.commands?.length) {
+        console.log(`Commands: ${manifest.commands.join(', ')}`)
+    }
+    if (manifest.hooks?.length) {
+        console.log(`Hooks: ${manifest.hooks.join(', ')}`)
+    }
+    if (manifest.events?.length) {
+        console.log(`Events: ${manifest.events.join(', ')}`)
+    }
+}
+
+// ─── Existing Commands ──────────────────────────────────────────────────
 
 async function login(): Promise<void> {
     const config = loadGitHubAppConfig(Bun.env)
@@ -127,7 +254,7 @@ async function approve(args: string[]): Promise<void> {
     const target = parseTarget(args[0])
     await userRequest('POST', `/repos/${target.owner}/${target.repo}/pulls/${target.number}/reviews`, {
         event: 'APPROVE',
-        body: 'Approved from b68-pilot CLI.',
+        body: 'Approved from gh-pilot CLI.',
     })
     console.log(`Approved ${target.owner}/${target.repo}#${target.number}`)
 }
@@ -136,14 +263,14 @@ async function merge(args: string[]): Promise<void> {
     const target = parseTarget(args[0])
     await userRequest('PUT', `/repos/${target.owner}/${target.repo}/pulls/${target.number}/merge`, {
         commit_title: `Merge pull request #${target.number}`,
-        commit_message: 'Merged from b68-pilot CLI.',
+        commit_message: 'Merged from gh-pilot CLI.',
     })
     console.log(`Merged ${target.owner}/${target.repo}#${target.number}`)
 }
 
 async function review(args: string[]): Promise<void> {
     const target = parseTarget(args[0])
-    const body = args.slice(1).join(' ') || 'Changes requested from b68-pilot CLI.'
+    const body = args.slice(1).join(' ') || 'Changes requested from gh-pilot CLI.'
     await userRequest('POST', `/repos/${target.owner}/${target.repo}/pulls/${target.number}/reviews`, {
         event: 'REQUEST_CHANGES',
         body,
@@ -232,7 +359,7 @@ function requireUserClient(): GitHubUserClient {
 function requireToken(): string {
     const config = readConfig()
     if (!config.accessToken) {
-        throw new Error('Not logged in. Run `b68 login` first.')
+        throw new Error('Not logged in. Run `gh-pilot login` first.')
     }
     return config.accessToken
 }
@@ -264,7 +391,7 @@ function readRepoFlag(args: string[]): string | undefined {
 }
 
 function printHelp(): void {
-    console.log(`b68 commands:
+    console.log(`gh-pilot commands:
   login
   logout
   whoami
@@ -276,7 +403,19 @@ function printHelp(): void {
   review owner/repo#123 [message]
   assign owner/repo#123 [username]
   comment owner/repo#123 message
-  summarize owner/repo#123`)
+  summarize owner/repo#123
+  plugin list
+  plugin install <path>
+  plugin uninstall <name>
+  plugin info <name>`)
+}
+
+function printPluginHelp(): void {
+    console.log(`Plugin commands:
+  plugin list                 List installed plugins
+  plugin install <path>       Install a plugin from a local directory
+  plugin uninstall <name>     Uninstall a plugin
+  plugin info <name>          Show plugin details`)
 }
 
 function sleep(ms: number): Promise<void> {

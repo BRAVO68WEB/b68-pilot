@@ -18,25 +18,25 @@ describe('parseMentionCommand', () => {
         expect(parseMentionCommand('hello world')).toBeNull()
     })
 
-    test('extracts command after @b68web mention', () => {
-        expect(parseMentionCommand('@b68web close')).toBe('close')
+    test('extracts command after @gh-pilot mention', () => {
+        expect(parseMentionCommand('@gh-pilot close')).toBe('close')
     })
 
     test('extracts command from multi-line comment', () => {
-        const body = 'Some text\n@b68web merge\nMore text'
+        const body = 'Some text\n@gh-pilot merge\nMore text'
         expect(parseMentionCommand(body)).toBe('merge')
     })
 
     test('returns first line only', () => {
-        expect(parseMentionCommand('@b68web close\nother stuff')).toBe('close')
+        expect(parseMentionCommand('@gh-pilot close\nother stuff')).toBe('close')
     })
 
     test('trims whitespace', () => {
-        expect(parseMentionCommand('@b68web   close   ')).toBe('close')
+        expect(parseMentionCommand('@gh-pilot   close   ')).toBe('close')
     })
 
     test('returns null for mention without command', () => {
-        expect(parseMentionCommand('@b68web ')).toBeNull()
+        expect(parseMentionCommand('@gh-pilot ')).toBeNull()
     })
 })
 

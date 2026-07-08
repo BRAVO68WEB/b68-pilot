@@ -7,7 +7,7 @@ export interface IssueCommentWebhookPayload {
     repository?: { full_name?: string }
 }
 
-const MENTION_PREFIX = '@b68web '
+const MENTION_PREFIX = '@gh-pilot '
 
 export function parseMentionCommand(body: string | null | undefined): string | null {
     if (body == null || typeof body !== 'string') return null

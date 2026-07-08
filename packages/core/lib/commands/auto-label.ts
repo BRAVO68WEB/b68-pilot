@@ -39,9 +39,9 @@ export async function autoLabel(
 
     // Size labels
     const totalChanges = files.reduce((sum, f) => sum + f.additions + f.deletions, 0)
-    const sizeS = parseInt(Bun.env.B68_SIZE_S ?? '10')
-    const sizeM = parseInt(Bun.env.B68_SIZE_M ?? '50')
-    const sizeL = parseInt(Bun.env.B68_SIZE_L ?? '200')
+    const sizeS = parseInt(Bun.env.GH_PILOT_SIZE_S ?? '10')
+    const sizeM = parseInt(Bun.env.GH_PILOT_SIZE_M ?? '50')
+    const sizeL = parseInt(Bun.env.GH_PILOT_SIZE_L ?? '200')
 
     if (totalChanges <= sizeS) labels.push('size/S')
     else if (totalChanges <= sizeM) labels.push('size/M')
@@ -115,7 +115,7 @@ function matchesPatterns(filename: string, patterns: string[]): boolean {
 }
 
 export async function loadLabelerConfigFromEnv(): Promise<LabelerConfig> {
-    const rules = Bun.env.B68_LABELER_RULES
+    const rules = Bun.env.GH_PILOT_LABELER_RULES
     if (!rules) return {}
 
     const config: LabelerConfig = {}

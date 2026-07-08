@@ -173,3 +173,5 @@ dist
 
 # bun build binaries
 packages/pilot-*
+
+.omo

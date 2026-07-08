@@ -175,6 +175,69 @@ export class PilotStore {
         return rows.map(rowToWorkItem)
     }
 
+    // ─── Plugin Data Store ────────────────────────────────────────────────
+
+    getPluginData(pluginName: string, key: string): { value: string } | null {
+        const row = this.db.query<{ value: string }, [string, string]>(
+            `select value from plugin_data where plugin_name = ? and key = ?`
+        ).get(pluginName, key)
+        return row ?? null
+    }
+
+    setPluginData(pluginName: string, key: string, value: string): void {
+        this.db.run(`
+            insert into plugin_data (plugin_name, key, value, updated_at)
+            values (?, ?, ?, ?)
+            on conflict(plugin_name, key) do update set
+                value = excluded.value,
+                updated_at = excluded.updated_at
+        `, [pluginName, key, value, new Date().toISOString()])
+    }
+
+    deletePluginData(pluginName: string, key: string): void {
+        this.db.run(`delete from plugin_data where plugin_name = ? and key = ?`, [pluginName, key])
+    }
+
+    listPluginData(pluginName: string, prefix?: string): Array<{ key: string; value: string }> {
+        if (prefix) {
+            return this.db.query<{ key: string; value: string }, [string, string]>(
+                `select key, value from plugin_data where plugin_name = ? and key like ? order by key`
+            ).all(pluginName, `${prefix}%`)
+        }
+        return this.db.query<{ key: string; value: string }, [string]>(
+            `select key, value from plugin_data where plugin_name = ? order by key`
+        ).all(pluginName)
+    }
+
+    // ─── Repo Config Store ────────────────────────────────────────────────
+
+    getRepoConfig(repo: string): string | null {
+        const row = this.db.query<{ config_json: string }, [string]>(
+            `select config_json from repo_configs where repo = ?`
+        ).get(repo)
+        return row?.config_json ?? null
+    }
+
+    setRepoConfig(repo: string, configJson: string): void {
+        this.db.run(`
+            insert into repo_configs (repo, config_json, updated_at)
+            values (?, ?, ?)
+            on conflict(repo) do update set
+                config_json = excluded.config_json,
+                updated_at = excluded.updated_at
+        `, [repo, configJson, new Date().toISOString()])
+    }
+
+    deleteRepoConfig(repo: string): void {
+        this.db.run(`delete from repo_configs where repo = ?`, [repo])
+    }
+
+    listRepoConfigs(): Array<{ repo: string; config_json: string; updated_at: string }> {
+        return this.db.query<{ repo: string; config_json: string; updated_at: string }, []>(
+            `select repo, config_json, updated_at from repo_configs order by repo`
+        ).all()
+    }
+
     private migrate(): void {
         this.db.run(`
             create table if not exists installations(
@@ -236,6 +299,22 @@ export class PilotStore {
                 requested_at text not null,
                 status text not null default 'pending',
                 unique(repository_full_name, pull_number)
+            )
+        `)
+        this.db.run(`
+            create table if not exists plugin_data(
+                plugin_name text not null,
+                key text not null,
+                value text not null,
+                updated_at text not null,
+                primary key (plugin_name, key)
+            )
+        `)
+        this.db.run(`
+            create table if not exists repo_configs(
+                repo text primary key,
+                config_json text not null,
+                updated_at text not null
             )
         `)
     }

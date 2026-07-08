@@ -1,7 +1,7 @@
 # core
 
 GitHub App auth, API clients, command parsing, webhook utilities, and work-item
-storage for b68-pilot.
+storage for gh-pilot.
 
 ## Auth Modes
 

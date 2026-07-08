@@ -60,6 +60,6 @@ export class Logger {
 }
 
 export function createLogger(module: string, level?: LogLevel): Logger {
-    const envLevel = (Bun.env.B68_LOG_LEVEL ?? 'info') as LogLevel
+    const envLevel = (Bun.env.GH_PILOT_LOG_LEVEL ?? 'info') as LogLevel
     return new Logger(module, level ?? envLevel)
 }

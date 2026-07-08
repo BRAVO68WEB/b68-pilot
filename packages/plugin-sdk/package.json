@@ -1,0 +1,16 @@
+{
+  "name": "@pilot/plugin-sdk",
+  "version": "0.1.0",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bunx tsc",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

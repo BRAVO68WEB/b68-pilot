@@ -14,7 +14,7 @@ const log = createLogger('stale-check')
 export async function runStaleCheck(config: GitHubAppConfig, store: PilotStore): Promise<void> {
     const staleConfig = getStaleConfig()
 
-    if (!Bun.env.B68_STALE_ENABLED || Bun.env.B68_STALE_ENABLED !== 'true') {
+    if (!Bun.env.GH_PILOT_STALE_ENABLED || Bun.env.GH_PILOT_STALE_ENABLED !== 'true') {
         log.info('Stale check disabled')
         return
     }

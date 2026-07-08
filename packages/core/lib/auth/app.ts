@@ -1,18 +1,18 @@
 import type { GitHubAppConfig } from '../github/types'
 
 export function loadGitHubAppConfig(env: Record<string, string | undefined>): GitHubAppConfig {
-    const appId = required(env.B68_GITHUB_APP_ID, 'B68_GITHUB_APP_ID')
-    const privateKey = normalizePrivateKey(required(env.B68_GITHUB_APP_PRIVATE_KEY, 'B68_GITHUB_APP_PRIVATE_KEY'))
-    const webhookSecret = required(env.B68_GITHUB_WEBHOOK_SECRET, 'B68_GITHUB_WEBHOOK_SECRET')
-    const clientId = required(env.B68_GITHUB_CLIENT_ID, 'B68_GITHUB_CLIENT_ID')
-    const appSlug = required(env.B68_GITHUB_APP_SLUG, 'B68_GITHUB_APP_SLUG')
-    const clientSecret = optional(env.B68_GITHUB_CLIENT_SECRET)
+    const appId = required(env.GH_PILOT_GITHUB_APP_ID, 'GH_PILOT_GITHUB_APP_ID')
+    const privateKey = normalizePrivateKey(required(env.GH_PILOT_GITHUB_APP_PRIVATE_KEY, 'GH_PILOT_GITHUB_APP_PRIVATE_KEY'))
+    const webhookSecret = required(env.GH_PILOT_GITHUB_WEBHOOK_SECRET, 'GH_PILOT_GITHUB_WEBHOOK_SECRET')
+    const clientId = required(env.GH_PILOT_GITHUB_CLIENT_ID, 'GH_PILOT_GITHUB_CLIENT_ID')
+    const appSlug = required(env.GH_PILOT_GITHUB_APP_SLUG, 'GH_PILOT_GITHUB_APP_SLUG')
+    const clientSecret = optional(env.GH_PILOT_GITHUB_CLIENT_SECRET)
 
     return { appId, privateKey, webhookSecret, clientId, clientSecret, appSlug }
 }
 
 export function defaultDbPath(env: Record<string, string | undefined>): string {
-    return optional(env.B68_DB_PATH) ?? '.data/b68-pilot.sqlite'
+    return optional(env.GH_PILOT_DB_PATH) ?? '.data/gh-pilot.sqlite'
 }
 
 function required(value: string | undefined, name: string): string {
@@ -29,4 +29,3 @@ function optional(value: string | undefined): string | undefined {
 function normalizePrivateKey(value: string): string {
     return value.includes('\\n') ? value.replace(/\\n/g, '\n') : value
 }
-
