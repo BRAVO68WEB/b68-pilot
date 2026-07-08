@@ -6,7 +6,7 @@ export interface TriageRule {
 }
 
 export function getTriageRules(): TriageRule[] {
-    const rules = Bun.env.B68_TRIAGE_RULES ?? 'bug:crash|error|exception,feature:request|enhancement,docs:typo|documentation'
+    const rules = Bun.env.GH_PILOT_TRIAGE_RULES ?? 'bug:crash|error|exception,feature:request|enhancement,docs:typo|documentation'
 
     return rules.split(',').map(rule => {
         const [label, keywordsStr] = rule.split(':')

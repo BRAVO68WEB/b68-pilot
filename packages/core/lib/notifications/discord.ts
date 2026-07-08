@@ -24,12 +24,12 @@ export class DiscordNotifier {
     private flushTimer: ReturnType<typeof setInterval> | null = null
 
     constructor() {
-        const interval = parseInt(Bun.env.B68_DISCORD_BATCH_INTERVAL ?? '300') * 1000
+        const interval = parseInt(Bun.env.GH_PILOT_DISCORD_BATCH_INTERVAL ?? '300') * 1000
         this.flushTimer = setInterval(() => this.flush(), interval)
     }
 
     async enqueue(repo: string, event: DiscordEvent): Promise<void> {
-        const events = Bun.env.B68_DISCORD_EVENTS?.split(',') ?? ['issue', 'pull_request', 'release', 'stale']
+        const events = Bun.env.GH_PILOT_DISCORD_EVENTS?.split(',') ?? ['issue', 'pull_request', 'release', 'stale']
         if (!events.includes(event.type)) return
 
         if (!this.queue.has(repo)) {
@@ -63,11 +63,11 @@ export class DiscordNotifier {
     private getWebhookUrl(repo: string): string | null {
         // Check per-repo webhook URL
         const repoKey = repo.replace('/', '_').toUpperCase()
-        const repoUrl = Bun.env[`B68_DISCORD_WEBHOOK_${repoKey}`]
+        const repoUrl = Bun.env[`GH_PILOT_DISCORD_WEBHOOK_${repoKey}`]
         if (repoUrl) return repoUrl
 
         // Fallback to global webhook URL
-        return Bun.env.B68_DISCORD_WEBHOOK_URL ?? null
+        return Bun.env.GH_PILOT_DISCORD_WEBHOOK_URL ?? null
     }
 
     private buildEmbed(repo: string, events: DiscordEvent[]): DiscordEmbed {

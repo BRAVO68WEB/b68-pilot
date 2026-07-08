@@ -9,8 +9,8 @@ export interface ReviewAssignConfig {
 
 export function getReviewAssignConfig(): ReviewAssignConfig {
     return {
-        strategy: (Bun.env.B68_REVIEW_STRATEGY ?? 'round-robin') as ReviewStrategy,
-        reviewers: (Bun.env.B68_REVIEWERS ?? '').split(',').map(r => r.trim()).filter(Boolean)
+        strategy: (Bun.env.GH_PILOT_REVIEW_STRATEGY ?? 'round-robin') as ReviewStrategy,
+        reviewers: (Bun.env.GH_PILOT_REVIEWERS ?? '').split(',').map(r => r.trim()).filter(Boolean)
     }
 }
 

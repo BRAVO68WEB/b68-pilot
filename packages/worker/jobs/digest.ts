@@ -8,7 +8,7 @@ import { getDiscordNotifier } from 'core'
 const log = createLogger('digest')
 
 export async function sendDigest(store: PilotStore): Promise<void> {
-    const webhookUrl = Bun.env.B68_DISCORD_WEBHOOK_URL
+    const webhookUrl = Bun.env.GH_PILOT_DISCORD_WEBHOOK_URL
     if (!webhookUrl) {
         log.info('Discord webhook URL not configured, skipping digest')
         return

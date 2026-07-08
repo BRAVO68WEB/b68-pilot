@@ -11,11 +11,11 @@ export interface StaleConfig {
 
 export function getStaleConfig(): StaleConfig {
     return {
-        days: parseInt(Bun.env.B68_STALE_DAYS ?? '15'),
-        closeDays: parseInt(Bun.env.B68_STALE_CLOSE_DAYS ?? '7'),
-        exemptLabels: (Bun.env.B68_STALE_EXEMPT_LABELS ?? 'pinned,security,bug').split(',').map(l => l.trim()),
-        behavior: (Bun.env.B68_STALE_BEHAVIOR ?? 'label-then-close') as 'label' | 'label-then-close',
-        staleLabel: Bun.env.B68_STALE_LABEL ?? 'stale'
+        days: parseInt(Bun.env.GH_PILOT_STALE_DAYS ?? '15'),
+        closeDays: parseInt(Bun.env.GH_PILOT_STALE_CLOSE_DAYS ?? '7'),
+        exemptLabels: (Bun.env.GH_PILOT_STALE_EXEMPT_LABELS ?? 'pinned,security,bug').split(',').map(l => l.trim()),
+        behavior: (Bun.env.GH_PILOT_STALE_BEHAVIOR ?? 'label-then-close') as 'label' | 'label-then-close',
+        staleLabel: Bun.env.GH_PILOT_STALE_LABEL ?? 'stale'
     }
 }
 
